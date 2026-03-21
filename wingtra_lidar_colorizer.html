@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WingtraLIDAR Height Colorizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --orange:     #F46F29;
+    --orange-dim: #c45820;
+    --orange-glow:#F46F2933;
+    --bg:         #0d0f12;
+    --bg2:        #13161b;
+    --bg3:        #1a1e25;
+    --bg4:        #20252e;
+    --border:     #2a3040;
+    --border2:    #3a4255;
+    --text:       #e8eaf0;
+    --text2:      #8a95a8;
+    --text3:      #50596a;
+    --green:      #3ddc84;
+    --red:        #ff4d4d;
+    --font-ui:    'Rajdhani', sans-serif;
+    --font-mono:  'JetBrains Mono', monospace;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* ── Background grid ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px; left: 50%; transform: translateX(-50%);
+    width: 800px; height: 400px;
+    background: radial-gradient(ellipse, #F46F2918 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 28px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .logo-mark {
+    width: 44px; height: 44px;
+    background: var(--orange);
+    clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+    flex-shrink: 0;
+    position: relative;
+    animation: logo-pulse 3s ease-in-out infinite;
+  }
+  @keyframes logo-pulse {
+    0%,100% { box-shadow: 0 0 0 0 var(--orange-glow); }
+    50% { box-shadow: 0 0 20px 6px var(--orange-glow); }
+  }
+  .logo-mark::after {
+    content: '';
+    position: absolute; inset: 8px;
+    background: var(--bg);
+    clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+  }
+  .header-text h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+  .header-text h1 span { color: var(--orange); }
+  .header-text p {
+    font-size: 13px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+  }
+  .badge {
+    margin-left: auto;
+    padding: 5px 12px;
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── Drop zone ── */
+  .drop-zone {
+    border: 2px dashed var(--border2);
+    border-radius: 4px;
+    background: var(--bg2);
+    padding: 52px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .drop-zone::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--orange-glow), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--orange);
+    background: var(--bg3);
+  }
+  .drop-zone:hover::before, .drop-zone.drag-over::before { opacity: 1; }
+  .drop-zone.drag-over { transform: scale(1.005); }
+
+  .drop-icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 18px;
+    position: relative;
+  }
+  .drop-icon svg { width: 100%; height: 100%; }
+  .drop-title {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
+  .drop-title span { color: var(--orange); }
+  .drop-sub {
+    font-size: 13px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+  }
+  #fileInput { display: none; }
+
+  /* ── Processing panel ── */
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    margin-top: 24px;
+  }
+  .panel-title {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Stats grid ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px 16px;
+  }
+  .stat-label {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    font-family: var(--font-mono);
+  }
+  .stat-value.accent { color: var(--orange); }
+
+  /* ── Progress bar ── */
+  .progress-wrap {
+    margin-bottom: 20px;
+  }
+  .progress-label {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-track {
+    height: 6px;
+    background: var(--bg4);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--orange-dim), var(--orange));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.1s;
+    position: relative;
+  }
+  .progress-bar::after {
+    content: '';
+    position: absolute; right: 0; top: 0; bottom: 0;
+    width: 20px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+  }
+
+  /* ── Canvas preview ── */
+  .preview-wrap {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    background: #060810;
+    margin-bottom: 24px;
+  }
+  #previewCanvas {
+    display: block;
+    width: 100%;
+    max-height: 480px;
+    image-rendering: pixelated;
+  }
+  .preview-overlay {
+    position: absolute;
+    bottom: 12px; right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+  }
+  .preview-badge {
+    background: rgba(13,15,18,0.85);
+    border: 1px solid var(--border2);
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text2);
+    border-radius: 2px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ── Color legend ── */
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .legend-label {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    white-space: nowrap;
+  }
+  .legend-bar {
+    flex: 1;
+    height: 20px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    background: linear-gradient(90deg,
+      #1a237e 0%,
+      #0288d1 20%,
+      #00acc1 35%,
+      #2e7d32 50%,
+      #f9a825 65%,
+      #F46F29 80%,
+      #c62828 100%
+    );
+    position: relative;
+  }
+  .legend-ticks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border-radius: 3px;
+    border: none;
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .btn-primary {
+    background: var(--orange);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--orange-dim);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px var(--orange-glow);
+  }
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn-secondary {
+    background: var(--bg4);
+    color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+  .btn-secondary:hover {
+    background: var(--bg3);
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Status messages ── */
+  .status {
+    padding: 12px 16px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: fade-in 0.3s;
+  }
+  @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .status.info { background: #1a237e22; border: 1px solid #1a237e66; color: #7986cb; }
+  .status.success { background: #1b5e2022; border: 1px solid #2e7d3266; color: var(--green); }
+  .status.error { background: #b71c1c22; border: 1px solid #c6282866; color: var(--red); }
+  .status.processing { background: #bf360c22; border: 1px solid var(--orange-dim); color: var(--orange); }
+
+  /* ── Pulse dot ── */
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor; flex-shrink: 0;
+  }
+  .dot.pulse { animation: dot-pulse 1s ease-in-out infinite; }
+  @keyframes dot-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.6)} }
+
+  /* ── Hidden sections ── */
+  .hidden { display: none !important; }
+
+  /* ── Scan line effect ── */
+  .scanlines {
+    position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
+    );
+  }
+
+  /* ── Format badge ── */
+  .format-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--orange-glow);
+    border: 1px solid var(--orange);
+    color: var(--orange);
+    font-size: 11px;
+    font-family: var(--font-mono);
+    border-radius: 2px;
+    vertical-align: middle;
+  }
+
+  .footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-mark"></div>
+    <div class="header-text">
+      <h1>Wingtra<span>LIDAR</span> Height Colorizer</h1>
+      <p>// point cloud z-value colorization tool · .las format</p>
+    </div>
+    <div class="badge">v1.0.0</div>
+  </header>
+
+  <!-- Drop Zone -->
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-icon">
+      <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6" y="8" width="44" height="40" rx="2" stroke="#F46F29" stroke-width="2"/>
+        <path d="M18 28 L28 18 L38 28" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M28 18 L28 38" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="14" cy="18" r="2" fill="#F46F29" opacity="0.5"/>
+        <circle cx="42" cy="38" r="2" fill="#F46F29" opacity="0.5"/>
+        <circle cx="42" cy="18" r="2" fill="#F46F29" opacity="0.3"/>
+        <circle cx="14" cy="38" r="2" fill="#F46F29" opacity="0.3"/>
+      </svg>
+    </div>
+    <div class="drop-title">Drop your <span>.las</span> file here</div>
+    <div class="drop-sub">or click to browse · LAS 1.0–1.4 · Point formats 0–5</div>
+    <input type="file" id="fileInput" accept=".las">
+  </div>
+
+  <!-- Processing Panel -->
+  <div class="panel hidden" id="processingPanel">
+
+    <!-- Stats -->
+    <div class="panel-title">File Info</div>
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-label">Filename</div>
+        <div class="stat-value" id="statFilename" style="font-size:13px">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Point Count</div>
+        <div class="stat-value accent" id="statPoints">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Min Z</div>
+        <div class="stat-value" id="statMinZ">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Max Z</div>
+        <div class="stat-value" id="statMaxZ">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Z Range</div>
+        <div class="stat-value" id="statZRange">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">LAS Version</div>
+        <div class="stat-value" id="statVersion">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Point Format</div>
+        <div class="stat-value" id="statFormat">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">File Size</div>
+        <div class="stat-value" id="statSize">—</div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressLabel">Processing…</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+
+    <!-- Color Legend -->
+    <div class="panel-title hidden" id="legendTitle">Height Color Scale</div>
+    <div class="legend hidden" id="colorLegend">
+      <div class="legend-label" id="legendMin">—</div>
+      <div style="flex:1">
+        <div class="legend-bar"></div>
+        <div class="legend-ticks">
+          <span>Low</span><span>Mid</span><span>High</span>
+        </div>
+      </div>
+      <div class="legend-label" id="legendMax">—</div>
+    </div>
+
+    <!-- Canvas Preview -->
+    <div class="panel-title hidden" id="previewTitle">Point Cloud Preview (Top View)</div>
+    <div class="preview-wrap hidden" id="previewWrap">
+      <canvas id="previewCanvas" width="1024" height="480"></canvas>
+      <div class="scanlines"></div>
+      <div class="preview-overlay">
+        <div class="preview-badge" id="previewSampleBadge">—</div>
+        <div class="preview-badge">XY TOP VIEW</div>
+      </div>
+    </div>
+
+    <!-- Status messages -->
+    <div id="statusBox"></div>
+
+    <!-- Action buttons -->
+    <div class="btn-row" id="actionBtns" style="margin-top:20px">
+      <button class="btn btn-primary hidden" id="downloadBtn" onclick="downloadColorized()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 2v8M5 7l3 3 3-3M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Download Colorized .LAS
+      </button>
+      <button class="btn btn-secondary" onclick="resetTool()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 7C2 4.24 4.24 2 7 2c1.66 0 3.13.81 4.05 2.05M12 7c0 2.76-2.24 5-5 5-1.66 0-3.13-.81-4.05-2.05" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M11 2v3h-3M3 12V9h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Load New File
+      </button>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span>WingtraLIDAR Height Colorizer · All processing is done locally in your browser</span>
+    <span>No data is uploaded to any server</span>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// LAS FORMAT CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const FORMAT_HAS_COLOR = {
+  0: false, 1: false, 2: true,  3: true,
+  4: false, 5: true,  6: false, 7: true,
+  8: true,  9: false, 10: true
+};
+
+// Output format when upgrading to add color
+const FORMAT_UPGRADE = {
+  0: 2, 1: 3, 4: 5, 6: 8, 9: 10
+};
+
+// Point record byte sizes per format
+const FORMAT_SIZE = {
+  0: 20, 1: 28,  2: 26,  3: 34,
+  4: 57, 5: 63,  6: 30,  7: 36,
+  8: 38, 9: 59, 10: 67
+};
+
+// RGB offset within the point record
+const FORMAT_RGB_OFFSET = {
+  2: 20, 3: 28, 5: 56, 7: 30, 8: 30, 10: 38
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COLOR GRADIENT (height → RGB)  –  7 stops, low=blue → high=red
+// ─────────────────────────────────────────────────────────────────────────────
+const GRADIENT_STOPS = [
+  { t: 0.00, r:  26, g:  35, b: 126 }, // deep blue
+  { t: 0.17, r:   2, g: 136, b: 209 }, // blue
+  { t: 0.33, r:   0, g: 172, b: 193 }, // cyan
+  { t: 0.50, r:  56, g: 142, b:  60 }, // green
+  { t: 0.67, r: 249, g: 168, b:  37 }, // yellow
+  { t: 0.83, r: 244, g: 111, b:  41 }, // orange (brand)
+  { t: 1.00, r: 198, g:  40, b:  40 }, // red
+];
+
+function heightToRGB(t) {
+  t = Math.max(0, Math.min(1, t));
+  for (let i = 1; i < GRADIENT_STOPS.length; i++) {
+    const a = GRADIENT_STOPS[i - 1], b = GRADIENT_STOPS[i];
+    if (t <= b.t) {
+      const f = (t - a.t) / (b.t - a.t);
+      return {
+        r: Math.round(a.r + (b.r - a.r) * f),
+        g: Math.round(a.g + (b.g - a.g) * f),
+        b: Math.round(a.b + (b.b - a.b) * f),
+      };
+    }
+  }
+  const last = GRADIENT_STOPS[GRADIENT_STOPS.length - 1];
+  return { r: last.r, g: last.g, b: last.b };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+let g_buffer      = null;  // original ArrayBuffer
+let g_colorized   = null;  // output ArrayBuffer
+let g_header      = null;  // parsed header object
+let g_filename    = '';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DROP ZONE SETUP
+// ─────────────────────────────────────────────────────────────────────────────
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('drag-over');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARSE HEADER
+// ─────────────────────────────────────────────────────────────────────────────
+function parseHeader(buf) {
+  const dv = new DataView(buf);
+  const sig = String.fromCharCode(dv.getUint8(0), dv.getUint8(1), dv.getUint8(2), dv.getUint8(3));
+  if (sig !== 'LASF') throw new Error('Not a valid LAS file (missing LASF signature)');
+
+  const verMajor   = dv.getUint8(24);
+  const verMinor   = dv.getUint8(25);
+  const headerSize = dv.getUint16(94, true);
+  const ptOffset   = dv.getUint32(96, true);
+  const numVLR     = dv.getUint32(100, true);
+  const ptFormat   = dv.getUint8(104);
+  const ptRecLen   = dv.getUint16(105, true);
+
+  let numPoints;
+  if (verMajor === 1 && verMinor >= 4) {
+    // LAS 1.4: num points is uint64 at offset 247
+    const lo = dv.getUint32(247, true);
+    const hi = dv.getUint32(251, true);
+    numPoints = hi * 0x100000000 + lo;
+    // also try legacy uint32 at 107
+    if (numPoints === 0) numPoints = dv.getUint32(107, true);
+  } else {
+    numPoints = dv.getUint32(107, true);
+  }
+
+  const xScale  = dv.getFloat64(131, true);
+  const yScale  = dv.getFloat64(139, true);
+  const zScale  = dv.getFloat64(147, true);
+  const xOffset = dv.getFloat64(155, true);
+  const yOffset = dv.getFloat64(163, true);
+  const zOffset = dv.getFloat64(171, true);
+  const maxX    = dv.getFloat64(179, true);
+  const minX    = dv.getFloat64(187, true);
+  const maxY    = dv.getFloat64(195, true);
+  const minY    = dv.getFloat64(203, true);
+  const maxZ    = dv.getFloat64(211, true);
+  const minZ    = dv.getFloat64(219, true);
+
+  return {
+    verMajor, verMinor, headerSize, ptOffset, numVLR,
+    ptFormat, ptRecLen, numPoints,
+    xScale, yScale, zScale,
+    xOffset, yOffset, zOffset,
+    maxX, minX, maxY, minY, maxZ, minZ,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FORMAT HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+}
+function fmtNum(n, dec = 2) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  return n.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function fmtInt(n) {
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function setProgress(pct, label) {
+  const bar  = document.getElementById('progressBar');
+  const lbl  = document.getElementById('progressLabel');
+  const ppct = document.getElementById('progressPct');
+  bar.style.width = pct + '%';
+  if (label) lbl.textContent = label;
+  ppct.textContent = Math.round(pct) + '%';
+}
+function setStatus(msg, type = 'info') {
+  const box = document.getElementById('statusBox');
+  box.innerHTML = `<div class="status ${type}"><div class="dot${type==='processing'?' pulse':''}"></div>${msg}</div>`;
+}
+function clearStatus() {
+  document.getElementById('statusBox').innerHTML = '';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN FILE HANDLER
+// ─────────────────────────────────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.las')) {
+    setStatus('Error: Only .las files are supported.', 'error');
+    document.getElementById('processingPanel').classList.remove('hidden');
+    return;
+  }
+  g_filename = file.name;
+  document.getElementById('processingPanel').classList.remove('hidden');
+  document.getElementById('downloadBtn').classList.add('hidden');
+
+  // Hide preview
+  ['previewWrap','previewTitle','colorLegend','legendTitle'].forEach(id =>
+    document.getElementById(id).classList.add('hidden')
+  );
+
+  setStatus('Reading file…', 'processing');
+  setProgress(5, 'Reading file…');
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      g_buffer = e.target.result;
+      processLAS(file);
+    } catch(err) {
+      setStatus('Error: ' + err.message, 'error');
+    }
+  };
+  reader.onerror = () => setStatus('Failed to read file.', 'error');
+  reader.readAsArrayBuffer(file);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROCESS LAS
+// ─────────────────────────────────────────────────────────────────────────────
+function processLAS(file) {
+  let header;
+  try {
+    header = parseHeader(g_buffer);
+    g_header = header;
+  } catch(err) {
+    setStatus('Parse error: ' + err.message, 'error');
+    return;
+  }
+
+  // Validate point format
+  if (!(header.ptFormat in FORMAT_SIZE)) {
+    setStatus(`Unsupported point format: ${header.ptFormat}`, 'error');
+    return;
+  }
+
+  // ── Fill stats ──
+  document.getElementById('statFilename').textContent = file.name;
+  document.getElementById('statPoints').textContent   = fmtInt(header.numPoints);
+  document.getElementById('statMinZ').textContent     = fmtNum(header.minZ) + ' m';
+  document.getElementById('statMaxZ').textContent     = fmtNum(header.maxZ) + ' m';
+  document.getElementById('statZRange').textContent   = fmtNum(header.maxZ - header.minZ) + ' m';
+  document.getElementById('statVersion').textContent  = `${header.verMajor}.${header.verMinor}`;
+  document.getElementById('statFormat').textContent   = `${header.ptFormat}`;
+  document.getElementById('statSize').textContent     = formatBytes(file.size);
+
+  // ── Legend ──
+  document.getElementById('legendMin').textContent = fmtNum(header.minZ) + ' m';
+  document.getElementById('legendMax').textContent = fmtNum(header.maxZ) + ' m';
+  document.getElementById('colorLegend').classList.remove('hidden');
+  document.getElementById('legendTitle').classList.remove('hidden');
+
+  setProgress(15, 'Analyzing point data…');
+  setStatus('Colorizing ' + fmtInt(header.numPoints) + ' points…', 'processing');
+
+  // Use setTimeout to allow UI to update
+  setTimeout(() => colorizeAndBuild(header), 50);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COLORIZE & BUILD OUTPUT BUFFER
+// ─────────────────────────────────────────────────────────────────────────────
+function colorizeAndBuild(header) {
+  const {
+    ptOffset, ptFormat, ptRecLen, numPoints,
+    zScale, zOffset, minZ, maxZ,
+    headerSize
+  } = header;
+
+  const zRange = maxZ - minZ;
+  const safe_zRange = zRange < 1e-9 ? 1 : zRange;
+
+  const inFmt   = ptFormat;
+  const outFmt  = FORMAT_HAS_COLOR[inFmt] ? inFmt : (FORMAT_UPGRADE[inFmt] ?? inFmt);
+  const inSize  = FORMAT_SIZE[inFmt]  ?? ptRecLen;
+  const outSize = FORMAT_SIZE[outFmt] ?? ptRecLen;
+  const rgbOffset = FORMAT_RGB_OFFSET[outFmt]; // byte offset within output record
+
+  const inView  = new Uint8Array(g_buffer);
+  const inDV    = new DataView(g_buffer);
+
+  // Compute output buffer size
+  // = header (headerSize bytes) + VLRs + point data
+  const vlrSize    = ptOffset - headerSize;
+  const outBufSize = ptOffset + numPoints * outSize;
+
+  let outBuf;
+  try {
+    outBuf = new ArrayBuffer(outBufSize);
+  } catch(e) {
+    setStatus('Out of memory. File may be too large for browser processing.', 'error');
+    return;
+  }
+
+  const outBytes = new Uint8Array(outBuf);
+  const outDV    = new DataView(outBuf);
+
+  // ── 1. Copy entire prefix (header + VLRs) ──
+  outBytes.set(inView.subarray(0, ptOffset));
+
+  // ── 2. Patch header for new format/record-length ──
+  outDV.setUint8(104, outFmt);
+  outDV.setUint16(105, outSize, true);
+
+  // Update generating software to identify colorizer
+  const sw = 'WingtraLIDAR Height Colorizer';
+  for (let i = 0; i < 32; i++) {
+    outDV.setUint8(58 + i, i < sw.length ? sw.charCodeAt(i) : 0);
+  }
+
+  // ── 3. Colorize each point ──
+  // For preview: collect samples (max 300k)
+  const maxSamples = 300000;
+  const sampleStep = numPoints > maxSamples ? Math.ceil(numPoints / maxSamples) : 1;
+  const previewXs = [], previewYs = [], previewColors = [];
+
+  const CHUNK = 100000;
+  let processed = 0;
+
+  function processChunk() {
+    const end = Math.min(processed + CHUNK, numPoints);
+    for (let i = processed; i < end; i++) {
+      const inOff  = ptOffset + i * inSize;
+      const outOff = ptOffset + i * outSize;
+
+      // Copy point bytes
+      const copyLen = Math.min(inSize, outSize);
+      outBytes.set(inView.subarray(inOff, inOff + copyLen), outOff);
+
+      // Get raw Z integer from input
+      const rawZ = inDV.getInt32(inOff + 8, true);
+      const realZ = rawZ * zScale + zOffset;
+      const t = (realZ - minZ) / safe_zRange;
+
+      const col = heightToRGB(t);
+
+      // Write RGB as uint16 (LAS spec: 0–65535)
+      if (rgbOffset !== undefined) {
+        outDV.setUint16(outOff + rgbOffset,     col.r * 256, true);
+        outDV.setUint16(outOff + rgbOffset + 2, col.g * 256, true);
+        outDV.setUint16(outOff + rgbOffset + 4, col.b * 256, true);
+      }
+
+      // Sample for preview
+      if (i % sampleStep === 0) {
+        const rawX = inDV.getInt32(inOff + 0, true);
+        const rawY = inDV.getInt32(inOff + 4, true);
+        previewXs.push(rawX * header.xScale + header.xOffset);
+        previewYs.push(rawY * header.yScale + header.yOffset);
+        previewColors.push(col);
+      }
+    }
+    processed = end;
+    const pct = 15 + (processed / numPoints) * 75;
+    setProgress(pct, `Colorizing… ${fmtInt(processed)} / ${fmtInt(numPoints)} pts`);
+
+    if (processed < numPoints) {
+      setTimeout(processChunk, 0);
+    } else {
+      finalizeOutput(outBuf, header, outFmt, outSize, previewXs, previewYs, previewColors, sampleStep, numPoints);
+    }
+  }
+
+  processChunk();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FINALIZE
+// ─────────────────────────────────────────────────────────────────────────────
+function finalizeOutput(outBuf, header, outFmt, outSize, previewXs, previewYs, previewColors, sampleStep, numPoints) {
+  g_colorized = outBuf;
+
+  setProgress(98, 'Rendering preview…');
+
+  setTimeout(() => {
+    renderPreview(previewXs, previewYs, previewColors, header);
+    setProgress(100, 'Complete');
+    setStatus(
+      `Colorization complete · ${fmtInt(numPoints)} points · output format ${outFmt} (${outSize} bytes/pt)`,
+      'success'
+    );
+    document.getElementById('downloadBtn').classList.remove('hidden');
+    document.getElementById('previewWrap').classList.remove('hidden');
+    document.getElementById('previewTitle').classList.remove('hidden');
+    document.getElementById('previewSampleBadge').textContent =
+      `${fmtInt(previewXs.length)} pts shown${sampleStep > 1 ? ' (sampled)' : ''}`;
+    // Hide progress after a moment
+    setTimeout(() => {
+      document.getElementById('progressWrap').style.opacity = '0.4';
+    }, 1500);
+  }, 30);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PREVIEW RENDERER
+// ─────────────────────────────────────────────────────────────────────────────
+function renderPreview(xs, ys, colors, header) {
+  const canvas = document.getElementById('previewCanvas');
+  const W = 1024, H = 480;
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#060810';
+  ctx.fillRect(0, 0, W, H);
+
+  if (xs.length === 0) return;
+
+  const minX = header.minX, maxX = header.maxX;
+  const minY = header.minY, maxY = header.maxY;
+  const spanX = maxX - minX, spanY = maxY - minY;
+  if (spanX < 1e-9 || spanY < 1e-9) return;
+
+  const pad = 24;
+  const scaleX = (W - pad * 2) / spanX;
+  const scaleY = (H - pad * 2) / spanY;
+  const scale  = Math.min(scaleX, scaleY);
+
+  const offX = pad + ((W - pad * 2) - spanX * scale) / 2;
+  const offY = pad + ((H - pad * 2) - spanY * scale) / 2;
+
+  // Draw points
+  const imgData = ctx.getImageData(0, 0, W, H);
+  const data = imgData.data;
+
+  for (let i = 0; i < xs.length; i++) {
+    const px = Math.round(offX + (xs[i] - minX) * scale);
+    const py = Math.round(H - offY - (ys[i] - minY) * scale);
+    if (px < 0 || px >= W || py < 0 || py >= H) continue;
+    const idx = (py * W + px) * 4;
+    data[idx]     = colors[i].r;
+    data[idx + 1] = colors[i].g;
+    data[idx + 2] = colors[i].b;
+    data[idx + 3] = 255;
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+
+  // Subtle grid overlay
+  ctx.strokeStyle = 'rgba(42,48,64,0.5)';
+  ctx.lineWidth = 0.5;
+  const gridStep = Math.pow(10, Math.floor(Math.log10(Math.max(spanX, spanY) / 4)));
+  const gStartX = Math.ceil(minX / gridStep) * gridStep;
+  for (let gx = gStartX; gx < maxX; gx += gridStep) {
+    const px = offX + (gx - minX) * scale;
+    ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
+  }
+  const gStartY = Math.ceil(minY / gridStep) * gridStep;
+  for (let gy = gStartY; gy < maxY; gy += gridStep) {
+    const py = H - offY - (gy - minY) * scale;
+    ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(W, py); ctx.stroke();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOWNLOAD
+// ─────────────────────────────────────────────────────────────────────────────
+function downloadColorized() {
+  if (!g_colorized) return;
+  const blob = new Blob([g_colorized], { type: 'application/octet-stream' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const base = g_filename.replace(/\.las$/i, '');
+  a.href     = url;
+  a.download = base + '_colorized.las';
+  a.click();
+  URL.revokeObjectURL(url);
+  setStatus(`Download started · ${formatBytes(g_colorized.byteLength)}`, 'success');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESET
+// ─────────────────────────────────────────────────────────────────────────────
+function resetTool() {
+  g_buffer = null; g_colorized = null; g_header = null; g_filename = '';
+  document.getElementById('processingPanel').classList.add('hidden');
+  document.getElementById('fileInput').value = '';
+  document.getElementById('progressWrap').style.opacity = '1';
+  clearStatus();
+}
+</script>
+</body>
+</html>
