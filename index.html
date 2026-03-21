@@ -3,407 +3,306 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WingtraLIDAR Height Colorizer</title>
+<title>WingtraLIDAR Colorizer</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --orange:      #F46F29;
-  --orange-lt:   #FDE8D8;
-  --orange-dim:  #d05e1e;
-  --bg:          #ffffff;
-  --bg2:         #f8f8f8;
-  --bg3:         #f2f2f2;
-  --border:      #e0e0e0;
-  --border2:     #cccccc;
-  --text:        #1a1a1a;
-  --text2:       #555555;
-  --text3:       #999999;
-  --green:       #2e7d32;
-  --green-lt:    #e8f5e9;
-  --red:         #c62828;
-  --red-lt:      #ffebee;
-  --blue-lt:     #e3f2fd;
-  --blue:        #1565c0;
-  --font-ui:     'Rajdhani', sans-serif;
-  --font-mono:   'JetBrains Mono', monospace;
+  --orange:     #F46F29;
+  --orange-lt:  #FDE8D8;
+  --orange-dim: #d05e1e;
+  --bg:         #ffffff;
+  --bg2:        #f8f8f8;
+  --bg3:        #f2f2f2;
+  --border:     #e0e0e0;
+  --border2:    #cccccc;
+  --text:       #1a1a1a;
+  --text2:      #555555;
+  --text3:      #999999;
+  --green:      #2e7d32;
+  --green-lt:   #e8f5e9;
+  --red:        #c62828;
+  --red-lt:     #ffebee;
+  --blue:       #1565c0;
+  --blue-lt:    #e3f2fd;
+  --teal:       #00796b;
+  --teal-lt:    #e0f2f1;
+  --font-ui:    'Rajdhani', sans-serif;
+  --font-mono:  'JetBrains Mono', monospace;
 }
-
-html, body {
-  min-height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  line-height: 1.5;
-  overflow-x: hidden;
-}
-
-.app {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 24px 60px;
-}
+html, body { min-height:100%; background:var(--bg); color:var(--text); font-family:var(--font-ui); font-size:15px; line-height:1.5; overflow-x:hidden; }
+.app { max-width:1100px; margin:0 auto; padding:0 24px 60px; }
 
 /* ── Header ── */
-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 24px 0 20px;
-  border-bottom: 2px solid var(--orange);
-  margin-bottom: 28px;
-}
-.logo-hex {
-  width: 40px; height: 40px;
-  background: var(--orange);
-  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.logo-hex svg { width: 20px; height: 20px; }
-.header-text h1 {
-  font-size: 22px; font-weight: 700;
-  letter-spacing: 0.05em; text-transform: uppercase; line-height: 1;
-}
-.header-text h1 span { color: var(--orange); }
-.header-text p { font-size: 12px; color: var(--text3); font-family: var(--font-mono); margin-top: 3px; }
-.header-badge {
-  margin-left: auto;
-  background: var(--orange); color: #fff;
-  padding: 4px 12px; font-size: 11px; font-family: var(--font-mono);
-  letter-spacing: 0.08em; border-radius: 2px;
-}
+header { display:flex; align-items:center; gap:16px; padding:24px 0 20px; border-bottom:2px solid var(--orange); margin-bottom:28px; }
+.logo-hex { width:40px; height:40px; background:var(--orange); clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.logo-hex svg { width:20px; height:20px; }
+.header-text h1 { font-size:22px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; line-height:1; }
+.header-text h1 span { color:var(--orange); }
+.header-text p { font-size:12px; color:var(--text3); font-family:var(--font-mono); margin-top:3px; }
+.header-badge { margin-left:auto; background:var(--orange); color:#fff; padding:4px 12px; font-size:11px; font-family:var(--font-mono); letter-spacing:0.08em; border-radius:2px; }
 
-/* ── Drop zone ── */
-.drop-zone {
-  border: 2px dashed var(--border2);
-  border-radius: 8px; background: var(--bg2);
-  padding: 48px 32px; text-align: center; cursor: pointer;
-  transition: all 0.2s; position: relative; overflow: hidden;
+/* ── Mode Selector ── */
+.mode-selector { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+.mode-card {
+  border:2px solid var(--border); border-radius:10px; padding:24px 22px;
+  cursor:pointer; transition:all 0.2s; background:var(--bg2); position:relative; overflow:hidden;
 }
-.drop-zone:hover, .drop-zone.drag-over { border-color: var(--orange); background: var(--orange-lt); }
-.drop-zone.drag-over { transform: scale(1.005); }
-.drop-icon { width: 52px; height: 52px; margin: 0 auto 16px; }
-.drop-icon svg { width: 100%; height: 100%; }
-.drop-title { font-size: 19px; font-weight: 600; margin-bottom: 6px; }
-.drop-title span { color: var(--orange); }
-.drop-sub { font-size: 12px; color: var(--text3); font-family: var(--font-mono); }
-#fileInput { display: none; }
+.mode-card:hover { border-color:var(--orange); background:var(--orange-lt); transform:translateY(-1px); box-shadow:0 4px 16px rgba(244,111,41,0.12); }
+.mode-card.active { border-color:var(--orange); background:var(--orange-lt); box-shadow:0 4px 16px rgba(244,111,41,0.15); }
+.mode-card.active::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:var(--orange); }
+.mode-icon { width:44px; height:44px; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; background:var(--bg3); transition:background 0.2s; }
+.mode-card:hover .mode-icon, .mode-card.active .mode-icon { background:rgba(244,111,41,0.15); }
+.mode-icon svg { width:24px; height:24px; }
+.mode-card h3 { font-size:17px; font-weight:700; letter-spacing:0.03em; margin-bottom:5px; }
+.mode-card p { font-size:12px; color:var(--text2); font-family:var(--font-mono); line-height:1.5; }
+.mode-pill { display:inline-block; background:var(--bg3); border:1px solid var(--border); border-radius:20px; font-size:10px; font-family:var(--font-mono); color:var(--text3); padding:2px 8px; margin-top:8px; }
+.mode-card.active .mode-pill { background:rgba(244,111,41,0.15); border-color:var(--orange); color:var(--orange-dim); }
+@media(max-width:600px){ .mode-selector{grid-template-columns:1fr;} }
 
 /* ── Panel ── */
-.panel {
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: 8px; padding: 24px; margin-top: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
-}
-.section-title {
-  font-size: 11px; font-family: var(--font-mono); color: var(--text3);
-  text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px;
-  display: flex; align-items: center; gap: 8px;
-}
-.section-title::after { content:''; flex:1; height:1px; background: var(--border); }
+.panel { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:24px; margin-top:4px; box-shadow:0 1px 3px rgba(0,0,0,0.07); }
+.section-title { font-size:11px; font-family:var(--font-mono); color:var(--text3); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── Drop zones ── */
+.drop-zone { border:2px dashed var(--border2); border-radius:8px; background:var(--bg2); padding:32px 24px; text-align:center; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; }
+.drop-zone:hover, .drop-zone.drag-over { border-color:var(--orange); background:var(--orange-lt); }
+.drop-zone.drag-over { transform:scale(1.005); }
+.drop-zone.has-file { border-style:solid; border-color:var(--green); background:var(--green-lt); cursor:default; }
+.drop-zone.has-file:hover { border-color:var(--green); background:var(--green-lt); transform:none; }
+.drop-icon { width:44px; height:44px; margin:0 auto 12px; }
+.drop-icon svg { width:100%; height:100%; }
+.drop-title { font-size:17px; font-weight:600; margin-bottom:4px; }
+.drop-title span { color:var(--orange); }
+.drop-sub { font-size:11px; color:var(--text3); font-family:var(--font-mono); }
+.drop-two { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+@media(max-width:640px){ .drop-two{grid-template-columns:1fr;} }
+.file-ready-label { font-size:13px; font-weight:600; color:var(--green); font-family:var(--font-mono); display:flex; align-items:center; gap:6px; justify-content:center; }
 
 /* ── Stats ── */
-.stats-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px; margin-bottom: 24px;
-}
-.stat-card {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 6px; padding: 11px 13px;
-}
-.stat-label { font-size: 10px; font-family: var(--font-mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
-.stat-value { font-size: 16px; font-weight: 600; font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.stat-value.accent { color: var(--orange); }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(135px,1fr)); gap:10px; margin-bottom:22px; }
+.stat-card { background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:11px 13px; }
+.stat-label { font-size:10px; font-family:var(--font-mono); color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px; }
+.stat-value { font-size:15px; font-weight:600; font-family:var(--font-mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.stat-value.accent { color:var(--orange); }
 
 /* ── Progress ── */
-.progress-block { margin-bottom: 15px; }
-.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-.progress-name { font-size: 12px; font-family: var(--font-mono); color: var(--text2); font-weight: 500; display: flex; align-items: center; gap: 8px; }
-.phase-tag {
-  background: var(--bg3); border: 1px solid var(--border); border-radius: 2px;
-  padding: 1px 7px; font-size: 10px; color: var(--text3); transition: all 0.2s;
-}
-.phase-tag.active { background: var(--orange-lt); border-color: var(--orange); color: var(--orange-dim); }
-.phase-tag.done   { background: var(--green-lt);  border-color: #a5d6a7;       color: var(--green); }
-.progress-pct { font-size: 12px; font-family: var(--font-mono); color: var(--text3); min-width: 36px; text-align: right; }
-.progress-track { height: 6px; background: var(--bg3); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
-.progress-fill {
-  height: 100%; border-radius: 4px; width: 0%;
-  transition: width 0.12s; position: relative; overflow: hidden;
-}
-.progress-fill.import-fill   { background: linear-gradient(90deg, #1565c0, #42a5f5); }
-.progress-fill.colorize-fill { background: linear-gradient(90deg, var(--orange-dim), var(--orange)); }
-.progress-fill.export-fill   { background: linear-gradient(90deg, #2e7d32, #66bb6a); }
-.progress-fill::after {
-  content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
-  animation: shimmer 1.4s infinite;
-}
-.progress-fill.done::after { display: none; }
-@keyframes shimmer { to { left: 200%; } }
+.progress-block { margin-bottom:14px; }
+.progress-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+.progress-name { font-size:12px; font-family:var(--font-mono); color:var(--text2); font-weight:500; display:flex; align-items:center; gap:8px; }
+.phase-tag { background:var(--bg3); border:1px solid var(--border); border-radius:2px; padding:1px 7px; font-size:10px; color:var(--text3); transition:all 0.2s; }
+.phase-tag.active { background:var(--orange-lt); border-color:var(--orange); color:var(--orange-dim); }
+.phase-tag.done   { background:var(--green-lt); border-color:#a5d6a7; color:var(--green); }
+.progress-pct { font-size:12px; font-family:var(--font-mono); color:var(--text3); min-width:36px; text-align:right; }
+.progress-track { height:6px; background:var(--bg3); border-radius:4px; overflow:hidden; border:1px solid var(--border); }
+.progress-fill { height:100%; border-radius:4px; width:0%; transition:width 0.12s; position:relative; overflow:hidden; }
+.progress-fill.import-fill  { background:linear-gradient(90deg,#1565c0,#42a5f5); }
+.progress-fill.tif-fill     { background:linear-gradient(90deg,#00796b,#4db6ac); }
+.progress-fill.decode-fill  { background:linear-gradient(90deg,#00695c,#26a69a); }
+.progress-fill.sample-fill  { background:linear-gradient(90deg,#6a1b9a,#ab47bc); }
+.progress-fill.colorize-fill{ background:linear-gradient(90deg,var(--orange-dim),var(--orange)); }
+.progress-fill.export-fill  { background:linear-gradient(90deg,#2e7d32,#66bb6a); }
+.progress-fill::after { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent); animation:shimmer 1.4s infinite; }
+.progress-fill.done::after { display:none; }
+@keyframes shimmer { to{left:200%;} }
 
 /* ── Legend ── */
-.legend-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-.legend-label { font-size: 11px; font-family: var(--font-mono); color: var(--text2); white-space: nowrap; }
-.legend-bar {
-  flex: 1; height: 18px; border-radius: 3px; border: 1px solid var(--border);
-  background: linear-gradient(90deg, #1a237e 0%, #0288d1 17%, #00acc1 33%, #2e7d32 50%, #f9a825 67%, #F46F29 83%, #c62828 100%);
-}
-.legend-ticks { display: flex; justify-content: space-between; margin-top: 3px; font-size: 10px; font-family: var(--font-mono); color: var(--text3); }
+.legend-row { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.legend-label { font-size:11px; font-family:var(--font-mono); color:var(--text2); white-space:nowrap; }
+.legend-bar { flex:1; height:18px; border-radius:3px; border:1px solid var(--border); background:linear-gradient(90deg,#1a237e 0%,#0288d1 17%,#00acc1 33%,#2e7d32 50%,#f9a825 67%,#F46F29 83%,#c62828 100%); }
+.legend-ticks { display:flex; justify-content:space-between; margin-top:3px; font-size:10px; font-family:var(--font-mono); color:var(--text3); }
+
+/* ── Height Sliders ── */
+.slider-section { margin-bottom:20px; }
+.slider-row { display:grid; grid-template-columns:56px 1fr 90px; align-items:center; gap:12px; margin-bottom:10px; }
+.slider-row-label { font-size:11px; font-family:var(--font-mono); color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; text-align:right; }
+input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:5px; border-radius:3px; outline:none; cursor:pointer; background:var(--bg3); border:1px solid var(--border); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:var(--orange); border:2px solid #fff; box-shadow:0 1px 4px rgba(244,111,41,0.4); cursor:pointer; transition:transform 0.15s,box-shadow 0.15s; }
+input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.2); box-shadow:0 2px 8px rgba(244,111,41,0.5); }
+input[type=range]::-moz-range-thumb { width:16px; height:16px; border-radius:50%; background:var(--orange); border:2px solid #fff; box-shadow:0 1px 4px rgba(244,111,41,0.4); cursor:pointer; }
+#sliderMin::-webkit-slider-thumb { background:#1565c0; box-shadow:0 1px 4px rgba(21,101,192,0.4); }
+#sliderMin::-webkit-slider-thumb:hover { box-shadow:0 2px 8px rgba(21,101,192,0.5); }
+#sliderMax::-webkit-slider-thumb { background:#c62828; box-shadow:0 1px 4px rgba(198,40,40,0.4); }
+#sliderMax::-webkit-slider-thumb:hover { box-shadow:0 2px 8px rgba(198,40,40,0.5); }
+.slider-value-input { width:100%; padding:5px 8px; border:1px solid var(--border2); border-radius:4px; font-size:12px; font-family:var(--font-mono); color:var(--text); background:var(--bg2); text-align:right; outline:none; transition:border-color 0.15s; }
+.slider-value-input:focus { border-color:var(--orange); background:#fff; }
+.slider-hint { font-size:10px; font-family:var(--font-mono); color:var(--text3); margin-top:4px; text-align:center; }
+.recolorize-badge { display:inline-flex; align-items:center; gap:6px; background:var(--orange-lt); border:1px solid var(--orange); color:var(--orange-dim); font-size:11px; font-family:var(--font-mono); padding:4px 10px; border-radius:3px; margin-top:8px; animation:fadein 0.2s; }
 
 /* ── 3D Preview ── */
-.preview-container {
-  position: relative; border: 1px solid var(--border); border-radius: 6px;
-  overflow: hidden; background: #111418; margin-bottom: 20px; height: 480px;
-}
-#threeCanvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; }
-#threeCanvas:active { cursor: grabbing; }
+.preview-container { position:relative; border:1px solid var(--border); border-radius:6px; overflow:hidden; background:#111418; margin-bottom:20px; height:480px; }
+#threeCanvas { display:block; width:100% !important; height:100% !important; cursor:grab; }
+#threeCanvas:active { cursor:grabbing; }
+.view-toggle { position:absolute; top:10px; left:10px; display:flex; gap:4px; }
+.view-btn { background:rgba(0,0,0,0.6); color:rgba(255,255,255,0.65); border:1px solid rgba(255,255,255,0.15); border-radius:3px; font-size:10px; font-family:var(--font-mono); padding:4px 9px; cursor:pointer; transition:all 0.15s; backdrop-filter:blur(4px); }
+.view-btn.active { background:var(--orange); color:#fff; border-color:var(--orange); }
+.view-btn:hover:not(.active) { background:rgba(0,0,0,0.8); color:#fff; }
+.preview-badges { position:absolute; top:10px; right:10px; display:flex; flex-direction:column; gap:4px; align-items:flex-end; }
+.preview-badge { background:rgba(0,0,0,0.6); color:rgba(255,255,255,0.7); font-size:10px; font-family:var(--font-mono); padding:3px 9px; border-radius:3px; backdrop-filter:blur(4px); }
+.preview-badge.orange { color:#F46F29; }
+.controls-hint { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.6); color:rgba(255,255,255,0.6); font-size:10px; font-family:var(--font-mono); padding:5px 14px; border-radius:20px; pointer-events:none; white-space:nowrap; backdrop-filter:blur(4px); }
 
-.view-toggle { position: absolute; top: 10px; left: 10px; display: flex; gap: 4px; }
-.view-btn {
-  background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.65);
-  border: 1px solid rgba(255,255,255,0.15); border-radius: 3px;
-  font-size: 10px; font-family: var(--font-mono); padding: 4px 9px;
-  cursor: pointer; transition: all 0.15s; backdrop-filter: blur(4px);
-}
-.view-btn.active { background: var(--orange); color: #fff; border-color: var(--orange); }
-.view-btn:hover:not(.active) { background: rgba(0,0,0,0.8); color: #fff; }
-
-.preview-badges { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
-.preview-badge {
-  background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.7);
-  font-size: 10px; font-family: var(--font-mono); padding: 3px 9px;
-  border-radius: 3px; backdrop-filter: blur(4px);
-}
-.preview-badge.orange { color: #F46F29; }
-.controls-hint {
-  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.6);
-  font-size: 10px; font-family: var(--font-mono); padding: 5px 14px;
-  border-radius: 20px; pointer-events: none; white-space: nowrap; backdrop-filter: blur(4px);
-}
-
-/* ── Status ── */
-.status-msg {
-  padding: 10px 14px; border-radius: 5px; font-size: 12px; font-family: var(--font-mono);
-  margin-top: 14px; display: flex; align-items: center; gap: 9px;
-  animation: fadein 0.25s;
-}
+/* ── Status & Buttons ── */
+.status-msg { padding:10px 14px; border-radius:5px; font-size:12px; font-family:var(--font-mono); margin-top:14px; display:flex; align-items:center; gap:9px; animation:fadein 0.25s; }
 @keyframes fadein { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
-.status-msg.info       { background: var(--blue-lt);  border: 1px solid #90caf9; color: var(--blue); }
-.status-msg.success    { background: var(--green-lt); border: 1px solid #a5d6a7; color: var(--green); }
-.status-msg.error      { background: var(--red-lt);   border: 1px solid #ef9a9a; color: var(--red); }
-.status-msg.processing { background: var(--orange-lt);border: 1px solid #ffcc80; color: var(--orange-dim); }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-.dot.pulse { animation: pulse 1s ease-in-out infinite; }
+.status-msg.info       { background:var(--blue-lt);  border:1px solid #90caf9; color:var(--blue); }
+.status-msg.success    { background:var(--green-lt); border:1px solid #a5d6a7; color:var(--green); }
+.status-msg.error      { background:var(--red-lt);   border:1px solid #ef9a9a; color:var(--red); }
+.status-msg.processing { background:var(--orange-lt);border:1px solid #ffcc80; color:var(--orange-dim); }
+.dot { width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
+.dot.pulse { animation:pulse 1s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.5)} }
+.btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+.btn { display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:5px; border:none; font-family:var(--font-ui); font-size:14px; font-weight:600; letter-spacing:0.03em; cursor:pointer; transition:all 0.18s; text-transform:uppercase; }
+.btn-primary { background:var(--orange); color:#fff; box-shadow:0 2px 8px rgba(244,111,41,0.3); }
+.btn-primary:hover:not(:disabled) { background:var(--orange-dim); transform:translateY(-1px); box-shadow:0 4px 14px rgba(244,111,41,0.4); }
+.btn-primary:disabled { opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none; }
+.btn-secondary { background:var(--bg2); color:var(--text2); border:1px solid var(--border2); }
+.btn-secondary:hover { border-color:var(--orange); color:var(--orange); background:var(--orange-lt); }
+.btn-teal { background:var(--teal); color:#fff; box-shadow:0 2px 8px rgba(0,121,107,0.3); }
+.btn-teal:hover:not(:disabled) { background:#00695c; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,121,107,0.4); }
+.btn-teal:disabled { opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none; }
 
-/* ── Buttons ── */
-.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
-.btn {
-  display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
-  border-radius: 5px; border: none; font-family: var(--font-ui); font-size: 14px;
-  font-weight: 600; letter-spacing: 0.03em; cursor: pointer; transition: all 0.18s; text-transform: uppercase;
-}
-.btn-primary { background: var(--orange); color: #fff; box-shadow: 0 2px 8px rgba(244,111,41,0.3); }
-.btn-primary:hover:not(:disabled) { background: var(--orange-dim); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(244,111,41,0.4); }
-.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
-.btn-secondary { background: var(--bg2); color: var(--text2); border: 1px solid var(--border2); }
-.btn-secondary:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-lt); }
+/* ── Info box ── */
+.info-box { background:var(--blue-lt); border:1px solid #90caf9; border-radius:6px; padding:12px 16px; font-size:12px; font-family:var(--font-mono); color:var(--blue); margin-bottom:18px; line-height:1.6; }
+.info-box strong { font-weight:600; }
 
-.hidden { display: none !important; }
-
-/* ── Height Range Sliders ── */
-.slider-section {
-  margin-bottom: 20px;
-}
-.slider-row {
-  display: grid;
-  grid-template-columns: 56px 1fr 90px;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-.slider-row-label {
-  font-size: 11px; font-family: var(--font-mono); color: var(--text3);
-  text-transform: uppercase; letter-spacing: 0.08em; text-align: right;
-}
-.slider-row-label span {
-  display: block; font-size: 9px; color: var(--text3); margin-top: 1px;
-}
-input[type=range] {
-  -webkit-appearance: none; appearance: none;
-  width: 100%; height: 5px;
-  border-radius: 3px; outline: none; cursor: pointer;
-  background: var(--bg3); border: 1px solid var(--border);
-}
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; appearance: none;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: var(--orange); border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(244,111,41,0.4);
-  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-}
-input[type=range]::-webkit-slider-thumb:hover {
-  transform: scale(1.2); box-shadow: 0 2px 8px rgba(244,111,41,0.5);
-}
-input[type=range]::-moz-range-thumb {
-  width: 16px; height: 16px; border-radius: 50%;
-  background: var(--orange); border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(244,111,41,0.4); cursor: pointer;
-}
-#sliderMin::-webkit-slider-thumb { background: #1565c0; box-shadow: 0 1px 4px rgba(21,101,192,0.4); }
-#sliderMin::-webkit-slider-thumb:hover { box-shadow: 0 2px 8px rgba(21,101,192,0.5); }
-#sliderMax::-webkit-slider-thumb { background: #c62828; box-shadow: 0 1px 4px rgba(198,40,40,0.4); }
-#sliderMax::-webkit-slider-thumb:hover { box-shadow: 0 2px 8px rgba(198,40,40,0.5); }
-
-.slider-value-input {
-  width: 100%; padding: 5px 8px;
-  border: 1px solid var(--border2); border-radius: 4px;
-  font-size: 12px; font-family: var(--font-mono); color: var(--text);
-  background: var(--bg2); text-align: right; outline: none;
-  transition: border-color 0.15s;
-}
-.slider-value-input:focus { border-color: var(--orange); background: #fff; }
-.slider-hint {
-  font-size: 10px; font-family: var(--font-mono); color: var(--text3);
-  margin-top: 4px; text-align: center;
-}
-.recolorize-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--orange-lt); border: 1px solid var(--orange);
-  color: var(--orange-dim); font-size: 11px; font-family: var(--font-mono);
-  padding: 4px 10px; border-radius: 3px; margin-top: 8px;
-  animation: fadein 0.2s;
-}
-
-footer {
-  margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
-  font-size: 11px; font-family: var(--font-mono); color: var(--text3);
-  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-}
+.hidden { display:none !important; }
+footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); font-size:11px; font-family:var(--font-mono); color:var(--text3); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
 </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- Header -->
-  <header>
-    <div class="logo-hex">
-      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 2L18 6v8l-8 4-8-4V6z" stroke="white" stroke-width="1.5" fill="none"/>
-        <circle cx="10" cy="7"  r="1.4" fill="white"/>
-        <circle cx="6"  cy="13" r="1.4" fill="white"/>
-        <circle cx="14" cy="13" r="1.4" fill="white"/>
-        <line x1="10" y1="7" x2="6"  y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
-        <line x1="10" y1="7" x2="14" y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
-        <line x1="6"  y1="13" x2="14" y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
+<!-- ── Header ── -->
+<header>
+  <div class="logo-hex">
+    <svg viewBox="0 0 20 20" fill="none">
+      <path d="M10 2L18 6v8l-8 4-8-4V6z" stroke="white" stroke-width="1.5" fill="none"/>
+      <circle cx="10" cy="7"  r="1.4" fill="white"/>
+      <circle cx="6"  cy="13" r="1.4" fill="white"/>
+      <circle cx="14" cy="13" r="1.4" fill="white"/>
+      <line x1="10" y1="7" x2="6"  y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
+      <line x1="10" y1="7" x2="14" y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
+      <line x1="6"  y1="13" x2="14" y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
+    </svg>
+  </div>
+  <div class="header-text">
+    <h1>Wingtra<span>LIDAR</span> Colorizer</h1>
+    <p>// point cloud colorization tool · .las format</p>
+  </div>
+  <div class="header-badge">v2.0.0</div>
+</header>
+
+<!-- ── Mode Selector ── -->
+<div class="mode-selector">
+  <div class="mode-card active" id="modeCardHeight" onclick="selectMode('height')">
+    <div class="mode-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 20h18M5 20V10l7-7 7 7v10"/>
+        <rect x="9" y="14" width="6" height="6"/>
       </svg>
     </div>
-    <div class="header-text">
-      <h1>Wingtra<span>LIDAR</span> Height Colorizer</h1>
-      <p>// z-value colorization for .las point clouds</p>
+    <h3>Height Colorize</h3>
+    <p>Colorize by Z value using a blue→green→red gradient. Includes manual min/max height range control.</p>
+    <span class="mode-pill">.las → colorized .las</span>
+  </div>
+  <div class="mode-card" id="modeCardOrtho" onclick="selectMode('ortho')">
+    <div class="mode-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <path d="M21 15l-5-5L5 21"/>
+      </svg>
     </div>
-    <div class="header-badge">v1.1.0</div>
-  </header>
+    <h3>Orthomosaic Colorize</h3>
+    <p>Project true RGB colors from a GeoTIFF orthomosaic onto each point using its XY coordinates.</p>
+    <span class="mode-pill">.las + .tif → colorized .las</span>
+  </div>
+</div>
 
-  <!-- Drop Zone -->
-  <div class="drop-zone" id="dropZone">
+<!-- ════════════════════════════════════════
+     MODE A: HEIGHT COLORIZE
+═════════════════════════════════════════ -->
+<div id="heightWorkflow">
+
+  <div class="drop-zone" id="dropZoneHeight">
     <div class="drop-icon">
-      <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 52 52" fill="none">
         <rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/>
         <path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/>
         <circle cx="12" cy="14" r="2.5" fill="#F46F29" opacity="0.35"/>
         <circle cx="40" cy="40" r="2.5" fill="#F46F29" opacity="0.35"/>
-        <circle cx="40" cy="14" r="2.5" fill="#F46F29" opacity="0.2"/>
-        <circle cx="12" cy="40" r="2.5" fill="#F46F29" opacity="0.2"/>
       </svg>
     </div>
     <div class="drop-title">Drop your <span>.las</span> file here</div>
     <div class="drop-sub">or click to browse &nbsp;·&nbsp; LAS 1.0–1.4 &nbsp;·&nbsp; Point formats 0–10</div>
-    <input type="file" id="fileInput" accept=".las">
+    <input type="file" id="fileInputHeight" accept=".las">
   </div>
 
-  <!-- Processing Panel -->
-  <div class="panel hidden" id="processingPanel">
-
+  <div class="panel hidden" id="heightPanel">
     <div class="section-title">File Info</div>
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-label">Filename</div><div class="stat-value" id="statFilename" style="font-size:12px">—</div></div>
-      <div class="stat-card"><div class="stat-label">Points</div><div class="stat-value accent" id="statPoints">—</div></div>
-      <div class="stat-card"><div class="stat-label">Min Z</div><div class="stat-value" id="statMinZ">—</div></div>
-      <div class="stat-card"><div class="stat-label">Max Z</div><div class="stat-value" id="statMaxZ">—</div></div>
-      <div class="stat-card"><div class="stat-label">Z Range</div><div class="stat-value" id="statZRange">—</div></div>
-      <div class="stat-card"><div class="stat-label">LAS Version</div><div class="stat-value" id="statVersion">—</div></div>
-      <div class="stat-card"><div class="stat-label">Pt Format</div><div class="stat-value" id="statFormat">—</div></div>
-      <div class="stat-card"><div class="stat-label">File Size</div><div class="stat-value" id="statSize">—</div></div>
+      <div class="stat-card"><div class="stat-label">Filename</div><div class="stat-value" id="hStatFile" style="font-size:12px">—</div></div>
+      <div class="stat-card"><div class="stat-label">Points</div><div class="stat-value accent" id="hStatPts">—</div></div>
+      <div class="stat-card"><div class="stat-label">Min Z</div><div class="stat-value" id="hStatMinZ">—</div></div>
+      <div class="stat-card"><div class="stat-label">Max Z</div><div class="stat-value" id="hStatMaxZ">—</div></div>
+      <div class="stat-card"><div class="stat-label">Z Range</div><div class="stat-value" id="hStatZRange">—</div></div>
+      <div class="stat-card"><div class="stat-label">LAS Version</div><div class="stat-value" id="hStatVer">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pt Format</div><div class="stat-value" id="hStatFmt">—</div></div>
+      <div class="stat-card"><div class="stat-label">File Size</div><div class="stat-value" id="hStatSize">—</div></div>
     </div>
 
     <div class="section-title">Progress</div>
-
     <div class="progress-block">
       <div class="progress-header">
-        <div class="progress-name"><span>Import</span><span class="phase-tag" id="importTag">Waiting</span></div>
-        <div class="progress-pct" id="importPct">0%</div>
+        <div class="progress-name"><span>Import</span><span class="phase-tag" id="hImportTag">Waiting</span></div>
+        <div class="progress-pct" id="hImportPct">0%</div>
       </div>
-      <div class="progress-track"><div class="progress-fill import-fill" id="importBar"></div></div>
+      <div class="progress-track"><div class="progress-fill import-fill" id="hImportBar"></div></div>
     </div>
-
     <div class="progress-block">
       <div class="progress-header">
-        <div class="progress-name"><span>Colorize</span><span class="phase-tag" id="colorizeTag">Waiting</span></div>
-        <div class="progress-pct" id="colorizePct">0%</div>
+        <div class="progress-name"><span>Colorize</span><span class="phase-tag" id="hColorizeTag">Waiting</span></div>
+        <div class="progress-pct" id="hColorizePct">0%</div>
       </div>
-      <div class="progress-track"><div class="progress-fill colorize-fill" id="colorizeBar"></div></div>
+      <div class="progress-track"><div class="progress-fill colorize-fill" id="hColorizeBar"></div></div>
     </div>
 
-    <div id="statusBox"></div>
+    <div id="hStatusBox"></div>
 
-    <!-- Legend -->
-    <div class="section-title hidden" id="legendTitle" style="margin-top:22px">Height Color Scale</div>
-    <div class="legend-row hidden" id="colorLegend">
-      <div class="legend-label" id="legendMin">—</div>
+    <div class="section-title hidden" id="hLegendTitle" style="margin-top:20px">Height Color Scale</div>
+    <div class="legend-row hidden" id="hColorLegend">
+      <div class="legend-label" id="hLegendMin">—</div>
       <div style="flex:1">
         <div class="legend-bar"></div>
         <div class="legend-ticks"><span>Low</span><span>25%</span><span>Mid</span><span>75%</span><span>High</span></div>
       </div>
-      <div class="legend-label" id="legendMax">—</div>
+      <div class="legend-label" id="hLegendMax">—</div>
     </div>
 
-    <!-- Height Range Sliders -->
-    <div class="slider-section hidden" id="sliderSection">
+    <div class="slider-section hidden" id="hSliderSection">
       <div class="section-title" style="margin-bottom:14px">Height Color Range</div>
-
       <div class="slider-row">
-        <div class="slider-row-label">Min Z<span style="color:#1565c0">▬</span></div>
+        <div class="slider-row-label" style="font-size:10px">Min Z<br><span style="color:#1565c0">▬</span></div>
         <input type="range" id="sliderMin" min="0" max="100" step="any" value="0">
         <input type="number" class="slider-value-input" id="inputMin" step="0.01">
       </div>
-
       <div class="slider-row">
-        <div class="slider-row-label">Max Z<span style="color:#c62828">▬</span></div>
+        <div class="slider-row-label" style="font-size:10px">Max Z<br><span style="color:#c62828">▬</span></div>
         <input type="range" id="sliderMax" min="0" max="100" step="any" value="100">
         <input type="number" class="slider-value-input" id="inputMax" step="0.01">
       </div>
-
-      <div class="slider-hint">
-        Points below Min Z → <span style="color:#1a237e">■</span> deep blue &nbsp;·&nbsp;
-        Points above Max Z → <span style="color:#c62828">■</span> deep red
-      </div>
-      <div id="recolorizeBadge" class="recolorize-badge hidden">
-        <div class="dot pulse" style="background:var(--orange)"></div>
-        Re-colorizing…
-      </div>
+      <div class="slider-hint">Points below Min Z → <span style="color:#1a237e">■</span> deep blue &nbsp;·&nbsp; Points above Max Z → <span style="color:#c62828">■</span> deep red</div>
+      <div id="hRecolorizeBadge" class="recolorize-badge hidden"><div class="dot pulse" style="background:var(--orange)"></div>Re-colorizing…</div>
     </div>
 
-    <!-- 3D Preview -->
-    <div class="section-title hidden" id="previewTitle">3D Point Cloud Preview</div>
-    <div class="preview-container hidden" id="previewWrap">
+    <div class="section-title hidden" id="hPreviewTitle">3D Point Cloud Preview</div>
+    <div class="preview-container hidden" id="hPreviewWrap">
       <canvas id="threeCanvas"></canvas>
       <div class="view-toggle">
         <button class="view-btn active" id="btn3d"    onclick="setViewMode('3d')">3D</button>
@@ -412,638 +311,832 @@ footer {
         <button class="view-btn"        id="btnSide"  onclick="setViewMode('side')">Side</button>
       </div>
       <div class="preview-badges">
-        <div class="preview-badge orange" id="previewPtCount">—</div>
+        <div class="preview-badge orange" id="hPreviewPts">—</div>
         <div class="preview-badge">Drag · Scroll · Shift+Drag</div>
       </div>
       <div class="controls-hint">🖱 Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Shift+Drag to pan</div>
     </div>
 
-    <!-- Buttons -->
     <div class="btn-row">
-      <button class="btn btn-primary hidden" id="downloadBtn" onclick="startDownload()">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-          <path d="M7.5 2v8M5 7l2.5 2.5L10 7M2 12h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <button class="btn btn-primary hidden" id="hDownloadBtn" onclick="startDownload('height')">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v8M5 7l2.5 2.5L10 7M2 12h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Download Colorized .LAS
       </button>
-      <button class="btn btn-secondary" onclick="resetTool()">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-          <path d="M2 6.5C2 4.01 4.01 2 6.5 2c1.45 0 2.75.66 3.61 1.7M11 6.5C11 8.99 8.99 11 6.5 11c-1.45 0-2.75-.66-3.61-1.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          <path d="M10.5 2v2.5h-2.5M2.5 11V8.5H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <button class="btn btn-secondary" onclick="resetMode('height')">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5C2 4.01 4.01 2 6.5 2c1.45 0 2.75.66 3.61 1.7M11 6.5C11 8.99 8.99 11 6.5 11c-1.45 0-2.75-.66-3.61-1.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10.5 2v2.5h-2.5M2.5 11V8.5H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Load New File
       </button>
     </div>
-
-    <!-- Export progress (below download button) -->
-    <div class="progress-block hidden" id="exportProgressBlock" style="margin-top:12px;margin-bottom:0">
+    <div class="progress-block hidden" id="hExportBlock" style="margin-top:12px;margin-bottom:0">
       <div class="progress-header">
-        <div class="progress-name"><span>Export</span><span class="phase-tag" id="exportTag">Waiting</span></div>
-        <div class="progress-pct" id="exportPct">0%</div>
+        <div class="progress-name"><span>Export</span><span class="phase-tag" id="hExportTag">Waiting</span></div>
+        <div class="progress-pct" id="hExportPct">0%</div>
       </div>
-      <div class="progress-track"><div class="progress-fill export-fill" id="exportBar"></div></div>
+      <div class="progress-track"><div class="progress-fill export-fill" id="hExportBar"></div></div>
     </div>
+  </div>
+</div>
 
+<!-- ════════════════════════════════════════
+     MODE B: ORTHO COLORIZE
+═════════════════════════════════════════ -->
+<div id="orthoWorkflow" class="hidden">
+
+  <div class="info-box">
+    <strong>How it works:</strong> Upload your .las point cloud and a GeoTIFF orthomosaic. Each point's XY coordinates are used to sample the corresponding RGB pixel from the TIF. Both files must be in the <strong>same coordinate reference system (CRS)</strong>.
   </div>
 
-  <footer>
-    <span>WingtraLIDAR Height Colorizer &nbsp;·&nbsp; All processing runs locally in your browser</span>
-    <span>No data is uploaded to any server</span>
-  </footer>
+  <div class="drop-two">
+    <div>
+      <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">① Point Cloud</div>
+      <div class="drop-zone" id="dropZoneOrthoLas">
+        <div class="drop-icon">
+          <svg viewBox="0 0 52 52" fill="none">
+            <rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/>
+            <path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="drop-title"><span>.las</span> file</div>
+        <div class="drop-sub">Point cloud input</div>
+        <input type="file" id="fileInputOrthoLas" accept=".las">
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">② Orthomosaic</div>
+      <div class="drop-zone" id="dropZoneOrthoTif">
+        <div class="drop-icon">
+          <svg viewBox="0 0 52 52" fill="none">
+            <rect x="4" y="4" width="44" height="44" rx="4" stroke="#00796b" stroke-width="2"/>
+            <rect x="10" y="10" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/>
+            <rect x="28" y="10" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/>
+            <rect x="10" y="28" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/>
+            <rect x="28" y="28" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/>
+          </svg>
+        </div>
+        <div class="drop-title"><span style="color:var(--teal)">.tif</span> file</div>
+        <div class="drop-sub">GeoTIFF orthomosaic (RGB)</div>
+        <input type="file" id="fileInputOrthoTif" accept=".tif,.tiff">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="orthoPanel">
+    <div class="section-title">File Info</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">LAS File</div><div class="stat-value" id="oStatLasFile" style="font-size:12px">—</div></div>
+      <div class="stat-card"><div class="stat-label">Points</div><div class="stat-value accent" id="oStatPts">—</div></div>
+      <div class="stat-card"><div class="stat-label">LAS Version</div><div class="stat-value" id="oStatVer">—</div></div>
+      <div class="stat-card"><div class="stat-label">LAS Size</div><div class="stat-value" id="oStatLasSize">—</div></div>
+      <div class="stat-card"><div class="stat-label">TIF File</div><div class="stat-value" id="oStatTifFile" style="font-size:12px">—</div></div>
+      <div class="stat-card"><div class="stat-label">TIF Size</div><div class="stat-value" id="oStatTifSize">—</div></div>
+      <div class="stat-card"><div class="stat-label">Image Res.</div><div class="stat-value" id="oStatTifRes">—</div></div>
+      <div class="stat-card"><div class="stat-label">Bands</div><div class="stat-value" id="oStatTifBands">—</div></div>
+    </div>
+
+    <div class="section-title">Progress</div>
+    <div class="progress-block">
+      <div class="progress-header">
+        <div class="progress-name"><span>Import LAS</span><span class="phase-tag" id="oLasTag">Waiting</span></div>
+        <div class="progress-pct" id="oLasPct">0%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill import-fill" id="oLasBar"></div></div>
+    </div>
+    <div class="progress-block">
+      <div class="progress-header">
+        <div class="progress-name"><span>Import TIF</span><span class="phase-tag" id="oTifTag">Waiting</span></div>
+        <div class="progress-pct" id="oTifPct">0%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill tif-fill" id="oTifBar"></div></div>
+    </div>
+    <div class="progress-block">
+      <div class="progress-header">
+        <div class="progress-name"><span>Decode TIF</span><span class="phase-tag" id="oDecodeTag">Waiting</span></div>
+        <div class="progress-pct" id="oDecodePct">0%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill decode-fill" id="oDecodeBar"></div></div>
+    </div>
+    <div class="progress-block">
+      <div class="progress-header">
+        <div class="progress-name"><span>Sample Colors</span><span class="phase-tag" id="oSampleTag">Waiting</span></div>
+        <div class="progress-pct" id="oSamplePct">0%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill sample-fill" id="oSampleBar"></div></div>
+    </div>
+
+    <div id="oStatusBox"></div>
+
+    <div class="section-title hidden" id="oPreviewTitle" style="margin-top:20px">3D Point Cloud Preview</div>
+    <div class="preview-container hidden" id="oPreviewWrap">
+      <canvas id="threeCanvasOrtho"></canvas>
+      <div class="view-toggle">
+        <button class="view-btn active" id="oBtn3d"    onclick="setViewModeOrtho('3d')">3D</button>
+        <button class="view-btn"        id="oBtnTop"   onclick="setViewModeOrtho('top')">Top</button>
+        <button class="view-btn"        id="oBtnFront" onclick="setViewModeOrtho('front')">Front</button>
+        <button class="view-btn"        id="oBtnSide"  onclick="setViewModeOrtho('side')">Side</button>
+      </div>
+      <div class="preview-badges">
+        <div class="preview-badge orange" id="oPreviewPts">—</div>
+        <div class="preview-badge">Drag · Scroll · Shift+Drag</div>
+      </div>
+      <div class="controls-hint">🖱 Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Shift+Drag to pan</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-teal hidden" id="oDownloadBtn" onclick="startDownload('ortho')">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v8M5 7l2.5 2.5L10 7M2 12h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download Colorized .LAS
+      </button>
+      <button class="btn btn-secondary" onclick="resetMode('ortho')">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5C2 4.01 4.01 2 6.5 2c1.45 0 2.75.66 3.61 1.7M11 6.5C11 8.99 8.99 11 6.5 11c-1.45 0-2.75-.66-3.61-1.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10.5 2v2.5h-2.5M2.5 11V8.5H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Load New Files
+      </button>
+    </div>
+    <div class="progress-block hidden" id="oExportBlock" style="margin-top:12px;margin-bottom:0">
+      <div class="progress-header">
+        <div class="progress-name"><span>Export</span><span class="phase-tag" id="oExportTag">Waiting</span></div>
+        <div class="progress-pct" id="oExportPct">0%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill export-fill" id="oExportBar"></div></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>WingtraLIDAR Colorizer &nbsp;·&nbsp; All processing runs locally in your browser</span>
+  <span>No data is uploaded to any server</span>
+</footer>
 </div>
 
 <script>
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // LAS CONSTANTS
-// ─────────────────────────────────────────────────────────────────────────────
-const FORMAT_HAS_COLOR = {0:false,1:false,2:true,3:true,4:false,5:true,6:false,7:true,8:true,9:false,10:true};
-const FORMAT_UPGRADE   = {0:2,1:3,4:5,6:8,9:10};
-const FORMAT_SIZE      = {0:20,1:28,2:26,3:34,4:57,5:63,6:30,7:36,8:38,9:59,10:67};
-const FORMAT_RGB_OFF   = {2:20,3:28,5:56,7:30,8:30,10:38};
+// ═══════════════════════════════════════════════════════════════
+const FORMAT_HAS_COLOR={0:false,1:false,2:true,3:true,4:false,5:true,6:false,7:true,8:true,9:false,10:true};
+const FORMAT_UPGRADE={0:2,1:3,4:5,6:8,9:10};
+const FORMAT_SIZE={0:20,1:28,2:26,3:34,4:57,5:63,6:30,7:36,8:38,9:59,10:67};
+const FORMAT_RGB_OFF={2:20,3:28,5:56,7:30,8:30,10:38};
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // HEIGHT GRADIENT
-// ─────────────────────────────────────────────────────────────────────────────
-const STOPS = [
-  {t:0.00,r:26,  g:35,  b:126},
-  {t:0.17,r:2,   g:136, b:209},
-  {t:0.33,r:0,   g:172, b:193},
-  {t:0.50,r:56,  g:142, b:60 },
-  {t:0.67,r:249, g:168, b:37 },
-  {t:0.83,r:244, g:111, b:41 },
-  {t:1.00,r:198, g:40,  b:40 },
+// ═══════════════════════════════════════════════════════════════
+const STOPS=[
+  {t:0.00,r:26, g:35, b:126},{t:0.17,r:2,  g:136,b:209},
+  {t:0.33,r:0,  g:172,b:193},{t:0.50,r:56, g:142,b:60 },
+  {t:0.67,r:249,g:168,b:37 },{t:0.83,r:244,g:111,b:41 },
+  {t:1.00,r:198,g:40, b:40 },
 ];
-function heightToRGB(t) {
-  t = Math.max(0, Math.min(1, t));
-  for (let i = 1; i < STOPS.length; i++) {
-    const a=STOPS[i-1], b=STOPS[i];
-    if (t <= b.t) {
-      const f=(t-a.t)/(b.t-a.t);
-      return {r:Math.round(a.r+(b.r-a.r)*f), g:Math.round(a.g+(b.g-a.g)*f), b:Math.round(a.b+(b.b-a.b)*f)};
-    }
+function heightToRGB(t){
+  t=Math.max(0,Math.min(1,t));
+  for(let i=1;i<STOPS.length;i++){
+    const a=STOPS[i-1],b=STOPS[i];
+    if(t<=b.t){const f=(t-a.t)/(b.t-a.t);return{r:Math.round(a.r+(b.r-a.r)*f),g:Math.round(a.g+(b.g-a.g)*f),b:Math.round(a.b+(b.b-a.b)*f)};}
   }
-  return {r:198,g:40,b:40};
+  return{r:198,g:40,b:40};
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STATE
-// ─────────────────────────────────────────────────────────────────────────────
-let g_buffer=null, g_colorized=null, g_header=null, g_filename='';
-let g_renderer=null, g_scene=null, g_camera=null, g_points=null, g_animId=null;
-let g_orbit = {theta:-0.5, phi:1.0, radius:3, panX:0, panY:0};
-let g_drag  = {down:false, lastX:0, lastY:0};
-// Preview sample data (stored for fast re-colorize on slider change)
-let g_previewXs=[], g_previewYs=[], g_previewZs=[], g_previewStep=1;
-// User-defined height range (null = use header values)
-let g_userMinZ=null, g_userMaxZ=null;
-let g_recolorizeTimer=null;
+// ═══════════════════════════════════════════════════════════════
+// SHARED STATE
+// ═══════════════════════════════════════════════════════════════
+let g_activeMode='height';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// THREE.JS
-// ─────────────────────────────────────────────────────────────────────────────
-function initThree() {
-  const wrap=document.getElementById('previewWrap');
-  const canvas=document.getElementById('threeCanvas');
-  const W=wrap.clientWidth, H=Math.max(wrap.clientHeight||480, 300);
+// Height mode state
+let hBuffer=null,hColorized=null,hHeader=null,hFilename='';
+let hPreviewXs=[],hPreviewYs=[],hPreviewZs=[];
+let hUserMinZ=null,hUserMaxZ=null,hRecolorizeTimer=null;
 
-  if (g_renderer) { cancelAnimationFrame(g_animId); g_renderer.dispose(); }
+// Ortho mode state
+let oLasBuffer=null,oTifBuffer=null,oColorized=null,oHeader=null,oLasFilename='',oTifFilename='';
+let oLasReady=false,oTifReady=false;
 
-  g_scene  = new THREE.Scene();
-  g_scene.background = new THREE.Color(0x111418);
-  g_camera = new THREE.PerspectiveCamera(45, W/H, 0.0001, 100000);
-  g_renderer = new THREE.WebGLRenderer({canvas, antialias:false});
-  g_renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  g_renderer.setSize(W, H);
+// Three.js — height
+let hRenderer=null,hScene=null,hCamera=null,hPoints=null,hAnimId=null;
+let hOrbit={theta:-0.5,phi:1.0,radius:3,panX:0,panY:0};
+let hDrag={down:false,lastX:0,lastY:0};
 
-  // Grid
-  const grid = new THREE.GridHelper(6, 24, 0x333333, 0x222222);
-  g_scene.add(grid);
+// Three.js — ortho
+let oRenderer=null,oScene=null,oCamera=null,oPoints=null,oAnimId=null;
+let oOrbit={theta:-0.5,phi:1.0,radius:3,panX:0,panY:0};
+let oDrag={down:false,lastX:0,lastY:0};
 
-  // Mouse orbit
-  canvas.addEventListener('mousedown', e=>{
-    g_drag.down=true; g_drag.lastX=e.clientX; g_drag.lastY=e.clientY;
-  });
-  window.addEventListener('mouseup', ()=>{ g_drag.down=false; });
-  canvas.addEventListener('mousemove', e=>{
-    if (!g_drag.down) return;
-    const dx=e.clientX-g_drag.lastX, dy=e.clientY-g_drag.lastY;
-    g_drag.lastX=e.clientX; g_drag.lastY=e.clientY;
-    if (e.shiftKey) {
-      const s=g_orbit.radius*0.0015;
-      g_orbit.panX-=dx*s; g_orbit.panY+=dy*s;
-    } else {
-      g_orbit.theta-=dx*0.008;
-      g_orbit.phi=Math.max(0.05, Math.min(Math.PI-0.05, g_orbit.phi+dy*0.008));
-    }
-  });
-  canvas.addEventListener('wheel', e=>{
-    e.preventDefault();
-    g_orbit.radius=Math.max(0.05, g_orbit.radius*(1+e.deltaY*0.001));
-  },{passive:false});
-
-  // Touch
-  let lastPinchDist=null;
-  canvas.addEventListener('touchstart', e=>{
-    if (e.touches.length===1){
-      g_drag.down=true; g_drag.lastX=e.touches[0].clientX; g_drag.lastY=e.touches[0].clientY;
-      lastPinchDist=null;
-    } else if (e.touches.length===2){
-      g_drag.down=false;
-      lastPinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-    }
-  });
-  canvas.addEventListener('touchmove', e=>{
-    e.preventDefault();
-    if (e.touches.length===1 && g_drag.down){
-      const dx=e.touches[0].clientX-g_drag.lastX, dy=e.touches[0].clientY-g_drag.lastY;
-      g_drag.lastX=e.touches[0].clientX; g_drag.lastY=e.touches[0].clientY;
-      g_orbit.theta-=dx*0.008;
-      g_orbit.phi=Math.max(0.05,Math.min(Math.PI-0.05, g_orbit.phi+dy*0.008));
-    } else if (e.touches.length===2 && lastPinchDist!==null){
-      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-      g_orbit.radius=Math.max(0.05, g_orbit.radius*(lastPinchDist/d));
-      lastPinchDist=d;
-    }
-  },{passive:false});
-  canvas.addEventListener('touchend', ()=>{ g_drag.down=false; lastPinchDist=null; });
-
-  renderLoop();
+// ═══════════════════════════════════════════════════════════════
+// MODE SELECTOR
+// ═══════════════════════════════════════════════════════════════
+function selectMode(mode){
+  g_activeMode=mode;
+  document.getElementById('modeCardHeight').classList.toggle('active',mode==='height');
+  document.getElementById('modeCardOrtho').classList.toggle('active',mode==='ortho');
+  document.getElementById('heightWorkflow').classList.toggle('hidden',mode!=='height');
+  document.getElementById('orthoWorkflow').classList.toggle('hidden',mode!=='ortho');
 }
 
-function renderLoop() {
-  g_animId=requestAnimationFrame(renderLoop);
-  const {theta,phi,radius,panX,panY}=g_orbit;
-  const x=radius*Math.sin(phi)*Math.sin(theta);
-  const y=radius*Math.cos(phi);
-  const z=radius*Math.sin(phi)*Math.cos(theta);
-  g_camera.position.set(x+panX, y+panY, z);
-  g_camera.lookAt(panX, panY, 0);
-  g_renderer.render(g_scene, g_camera);
-}
-
-function setViewMode(mode) {
-  document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('btn'+mode.charAt(0).toUpperCase()+mode.slice(1)).classList.add('active');
-  g_orbit.panX=0; g_orbit.panY=0;
-  if (mode==='3d')    { g_orbit.theta=-0.5; g_orbit.phi=1.0; }
-  if (mode==='top')   { g_orbit.theta=0;    g_orbit.phi=0.01; }
-  if (mode==='front') { g_orbit.theta=0;    g_orbit.phi=Math.PI/2; }
-  if (mode==='side')  { g_orbit.theta=Math.PI/2; g_orbit.phi=Math.PI/2; }
-}
-
-function buildPointCloud(xs, ys, zs, cols, header) {
-  if (g_points) { g_scene.remove(g_points); g_points.geometry.dispose(); g_points.material.dispose(); g_points=null; }
-  const N=xs.length;
-  if (N===0) return;
-
-  const cx=(header.maxX+header.minX)/2, cy=(header.maxY+header.minY)/2, cz=(header.maxZ+header.minZ)/2;
-  const span=Math.max(header.maxX-header.minX, header.maxY-header.minY, header.maxZ-header.minZ, 0.001);
-  const sc=2.0/span;
-
-  const pos=new Float32Array(N*3), col=new Float32Array(N*3);
-  for (let i=0;i<N;i++) {
-    pos[i*3+0]=(xs[i]-cx)*sc;
-    pos[i*3+1]=(zs[i]-cz)*sc;
-    pos[i*3+2]=(ys[i]-cy)*sc;
-    col[i*3+0]=cols[i].r/255;
-    col[i*3+1]=cols[i].g/255;
-    col[i*3+2]=cols[i].b/255;
-  }
-
-  // Reposition grid
-  g_scene.children.filter(c=>c instanceof THREE.GridHelper).forEach(g=>g_scene.remove(g));
-  const gridH=new THREE.GridHelper(4,24,0x333333,0x222222);
-  gridH.position.y=-((header.maxZ-header.minZ)/2)*sc-0.08;
-  g_scene.add(gridH);
-
-  const geo=new THREE.BufferGeometry();
-  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  geo.setAttribute('color',   new THREE.BufferAttribute(col,3));
-
-  const ptSize=Math.max(0.003, Math.min(0.012, 1.5/Math.sqrt(N)));
-  const mat=new THREE.PointsMaterial({size:ptSize, vertexColors:true, sizeAttenuation:true});
-  g_points=new THREE.Points(geo,mat);
-  g_scene.add(g_points);
-  g_orbit={theta:-0.5, phi:1.0, radius:2.8, panX:0, panY:0};
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PARSE HEADER
-// ─────────────────────────────────────────────────────────────────────────────
-function parseHeader(buf) {
-  const dv=new DataView(buf);
-  const sig=String.fromCharCode(dv.getUint8(0),dv.getUint8(1),dv.getUint8(2),dv.getUint8(3));
-  if (sig!=='LASF') throw new Error('Not a valid LAS file (missing LASF signature)');
-  const verMajor=dv.getUint8(24), verMinor=dv.getUint8(25);
-  const headerSize=dv.getUint16(94,true), ptOffset=dv.getUint32(96,true);
-  const ptFormat=dv.getUint8(104), ptRecLen=dv.getUint16(105,true);
-  let numPoints=dv.getUint32(107,true);
-  if (verMajor===1 && verMinor>=4){
-    const lo=dv.getUint32(247,true),hi=dv.getUint32(251,true);
-    const big=hi*0x100000000+lo; if(big>0) numPoints=big;
-  }
-  const xScale=dv.getFloat64(131,true),yScale=dv.getFloat64(139,true),zScale=dv.getFloat64(147,true);
-  const xOffset=dv.getFloat64(155,true),yOffset=dv.getFloat64(163,true),zOffset=dv.getFloat64(171,true);
-  const maxX=dv.getFloat64(179,true),minX=dv.getFloat64(187,true);
-  const maxY=dv.getFloat64(195,true),minY=dv.getFloat64(203,true);
-  const maxZ=dv.getFloat64(211,true),minZ=dv.getFloat64(219,true);
-  return {verMajor,verMinor,headerSize,ptOffset,ptFormat,ptRecLen,numPoints,
-          xScale,yScale,zScale,xOffset,yOffset,zOffset,maxX,minX,maxY,minY,maxZ,minZ};
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// UI HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-function setBar(barId,pctId,tagId,pct,label,state) {
-  document.getElementById(barId).style.width=pct+'%';
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function setBar(barId,pctId,tagId,pct,label,state){
+  const bar=document.getElementById(barId); if(!bar)return;
+  bar.style.width=pct+'%';
   document.getElementById(pctId).textContent=Math.round(pct)+'%';
   const tag=document.getElementById(tagId);
-  if (label) tag.textContent=label;
+  if(label)tag.textContent=label;
   tag.className='phase-tag'+(state==='active'?' active':state==='done'?' done active':'');
-  const fill=document.getElementById(barId);
-  if (state==='done') fill.classList.add('done'); else fill.classList.remove('done');
+  if(state==='done')bar.classList.add('done'); else bar.classList.remove('done');
 }
-function setStatus(msg,type='info'){
-  document.getElementById('statusBox').innerHTML=
+function setStatus(boxId,msg,type='info'){
+  document.getElementById(boxId).innerHTML=
     `<div class="status-msg ${type}"><div class="dot${type==='processing'?' pulse':''}"></div>${msg}</div>`;
 }
 function fmtNum(n,d=2){return isNaN(n)?'—':n.toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
 function fmtInt(n){return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');}
 function formatBytes(b){if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';if(b<1073741824)return(b/1048576).toFixed(1)+' MB';return(b/1073741824).toFixed(2)+' GB';}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DROP ZONE
-// ─────────────────────────────────────────────────────────────────────────────
-const dropZone=document.getElementById('dropZone');
-const fileInput=document.getElementById('fileInput');
-dropZone.addEventListener('click',()=>fileInput.click());
-fileInput.addEventListener('change',e=>{if(e.target.files[0]) handleFile(e.target.files[0]);});
-dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
-dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop',e=>{
-  e.preventDefault();dropZone.classList.remove('drag-over');
-  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-});
+function parseHeader(buf){
+  const dv=new DataView(buf);
+  const sig=String.fromCharCode(dv.getUint8(0),dv.getUint8(1),dv.getUint8(2),dv.getUint8(3));
+  if(sig!=='LASF')throw new Error('Not a valid LAS file (missing LASF signature)');
+  const verMajor=dv.getUint8(24),verMinor=dv.getUint8(25);
+  const headerSize=dv.getUint16(94,true),ptOffset=dv.getUint32(96,true);
+  const ptFormat=dv.getUint8(104),ptRecLen=dv.getUint16(105,true);
+  let numPoints=dv.getUint32(107,true);
+  if(verMajor===1&&verMinor>=4){const lo=dv.getUint32(247,true),hi=dv.getUint32(251,true);const big=hi*0x100000000+lo;if(big>0)numPoints=big;}
+  const xScale=dv.getFloat64(131,true),yScale=dv.getFloat64(139,true),zScale=dv.getFloat64(147,true);
+  const xOffset=dv.getFloat64(155,true),yOffset=dv.getFloat64(163,true),zOffset=dv.getFloat64(171,true);
+  const maxX=dv.getFloat64(179,true),minX=dv.getFloat64(187,true);
+  const maxY=dv.getFloat64(195,true),minY=dv.getFloat64(203,true);
+  const maxZ=dv.getFloat64(211,true),minZ=dv.getFloat64(219,true);
+  return{verMajor,verMinor,headerSize,ptOffset,ptFormat,ptRecLen,numPoints,xScale,yScale,zScale,xOffset,yOffset,zOffset,maxX,minX,maxY,minY,maxZ,minZ};
+}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HANDLE FILE
-// ─────────────────────────────────────────────────────────────────────────────
-function handleFile(file) {
-  if (!file.name.toLowerCase().endsWith('.las')) {
-    document.getElementById('processingPanel').classList.remove('hidden');
-    setStatus('Error: Only .las files are supported.','error'); return;
+function buildOutputHeader(inView,outDV,outFmt,outSize){
+  outDV.setUint8(104,outFmt); outDV.setUint16(105,outSize,true);
+  const sw='WingtraLIDAR Colorizer';
+  for(let i=0;i<32;i++) outDV.setUint8(58+i,i<sw.length?sw.charCodeAt(i):0);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// THREE.JS — HEIGHT
+// ═══════════════════════════════════════════════════════════════
+function initThreeHeight(){
+  const wrap=document.getElementById('hPreviewWrap');
+  const canvas=document.getElementById('threeCanvas');
+  const W=wrap.clientWidth,H=Math.max(wrap.clientHeight||480,300);
+  if(hRenderer){cancelAnimationFrame(hAnimId);hRenderer.dispose();}
+  hScene=new THREE.Scene(); hScene.background=new THREE.Color(0x111418);
+  hCamera=new THREE.PerspectiveCamera(45,W/H,0.0001,100000);
+  hRenderer=new THREE.WebGLRenderer({canvas,antialias:false});
+  hRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  hRenderer.setSize(W,H);
+  hScene.add(new THREE.GridHelper(6,24,0x333333,0x222222));
+  setupOrbitControls(canvas,hDrag,hOrbit);
+  hRenderLoop();
+}
+function hRenderLoop(){
+  hAnimId=requestAnimationFrame(hRenderLoop);
+  const{theta,phi,radius,panX,panY}=hOrbit;
+  hCamera.position.set(radius*Math.sin(phi)*Math.sin(theta)+panX,radius*Math.cos(phi)+panY,radius*Math.sin(phi)*Math.cos(theta));
+  hCamera.lookAt(panX,panY,0);
+  hRenderer.render(hScene,hCamera);
+}
+function setViewMode(mode){
+  document.querySelectorAll('#hPreviewWrap .view-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn'+mode.charAt(0).toUpperCase()+mode.slice(1)).classList.add('active');
+  applyViewMode(hOrbit,mode);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// THREE.JS — ORTHO
+// ═══════════════════════════════════════════════════════════════
+function initThreeOrtho(){
+  const wrap=document.getElementById('oPreviewWrap');
+  const canvas=document.getElementById('threeCanvasOrtho');
+  const W=wrap.clientWidth,H=Math.max(wrap.clientHeight||480,300);
+  if(oRenderer){cancelAnimationFrame(oAnimId);oRenderer.dispose();}
+  oScene=new THREE.Scene(); oScene.background=new THREE.Color(0x111418);
+  oCamera=new THREE.PerspectiveCamera(45,W/H,0.0001,100000);
+  oRenderer=new THREE.WebGLRenderer({canvas,antialias:false});
+  oRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  oRenderer.setSize(W,H);
+  oScene.add(new THREE.GridHelper(6,24,0x333333,0x222222));
+  setupOrbitControls(canvas,oDrag,oOrbit);
+  oRenderLoop();
+}
+function oRenderLoop(){
+  oAnimId=requestAnimationFrame(oRenderLoop);
+  const{theta,phi,radius,panX,panY}=oOrbit;
+  oCamera.position.set(radius*Math.sin(phi)*Math.sin(theta)+panX,radius*Math.cos(phi)+panY,radius*Math.sin(phi)*Math.cos(theta));
+  oCamera.lookAt(panX,panY,0);
+  oRenderer.render(oScene,oCamera);
+}
+function setViewModeOrtho(mode){
+  document.querySelectorAll('#oPreviewWrap .view-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('oBtn'+mode.charAt(0).toUpperCase()+mode.slice(1)).classList.add('active');
+  applyViewMode(oOrbit,mode);
+}
+
+// ── Shared orbit helpers ──
+function applyViewMode(orbit,mode){
+  orbit.panX=0; orbit.panY=0;
+  if(mode==='3d')   {orbit.theta=-0.5;orbit.phi=1.0;}
+  if(mode==='top')  {orbit.theta=0;orbit.phi=0.01;}
+  if(mode==='front'){orbit.theta=0;orbit.phi=Math.PI/2;}
+  if(mode==='side') {orbit.theta=Math.PI/2;orbit.phi=Math.PI/2;}
+}
+function setupOrbitControls(canvas,drag,orbit){
+  canvas.addEventListener('mousedown',e=>{drag.down=true;drag.lastX=e.clientX;drag.lastY=e.clientY;});
+  window.addEventListener('mouseup',()=>{drag.down=false;});
+  canvas.addEventListener('mousemove',e=>{
+    if(!drag.down)return;
+    const dx=e.clientX-drag.lastX,dy=e.clientY-drag.lastY;
+    drag.lastX=e.clientX;drag.lastY=e.clientY;
+    if(e.shiftKey){const s=orbit.radius*0.0015;orbit.panX-=dx*s;orbit.panY+=dy*s;}
+    else{orbit.theta-=dx*0.008;orbit.phi=Math.max(0.05,Math.min(Math.PI-0.05,orbit.phi+dy*0.008));}
+  });
+  canvas.addEventListener('wheel',e=>{e.preventDefault();orbit.radius=Math.max(0.05,orbit.radius*(1+e.deltaY*0.001));},{passive:false});
+  let lpd=null;
+  canvas.addEventListener('touchstart',e=>{
+    if(e.touches.length===1){drag.down=true;drag.lastX=e.touches[0].clientX;drag.lastY=e.touches[0].clientY;lpd=null;}
+    else if(e.touches.length===2){drag.down=false;lpd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}
+  });
+  canvas.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    if(e.touches.length===1&&drag.down){const dx=e.touches[0].clientX-drag.lastX,dy=e.touches[0].clientY-drag.lastY;drag.lastX=e.touches[0].clientX;drag.lastY=e.touches[0].clientY;orbit.theta-=dx*0.008;orbit.phi=Math.max(0.05,Math.min(Math.PI-0.05,orbit.phi+dy*0.008));}
+    else if(e.touches.length===2&&lpd!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);orbit.radius=Math.max(0.05,orbit.radius*(lpd/d));lpd=d;}
+  },{passive:false});
+  canvas.addEventListener('touchend',()=>{drag.down=false;lpd=null;});
+}
+
+function buildPointCloud(scene,orbitRef,xs,ys,zs,cols,header){
+  // remove old points
+  scene.children.filter(c=>c.isPoints).forEach(p=>{scene.remove(p);p.geometry.dispose();p.material.dispose();});
+  const N=xs.length; if(N===0)return null;
+  const cx=(header.maxX+header.minX)/2,cy=(header.maxY+header.minY)/2,cz=(header.maxZ+header.minZ)/2;
+  const span=Math.max(header.maxX-header.minX,header.maxY-header.minY,header.maxZ-header.minZ,0.001);
+  const sc=2.0/span;
+  const pos=new Float32Array(N*3),col=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    pos[i*3+0]=(xs[i]-cx)*sc; pos[i*3+1]=(zs[i]-cz)*sc; pos[i*3+2]=(ys[i]-cy)*sc;
+    col[i*3+0]=cols[i].r/255; col[i*3+1]=cols[i].g/255; col[i*3+2]=cols[i].b/255;
   }
-  g_filename=file.name;
-  document.getElementById('processingPanel').classList.remove('hidden');
-  document.getElementById('downloadBtn').classList.add('hidden');
-  ['previewWrap','previewTitle','colorLegend','legendTitle'].forEach(id=>
-    document.getElementById(id).classList.add('hidden'));
+  scene.children.filter(c=>c instanceof THREE.GridHelper).forEach(g=>scene.remove(g));
+  const gridH=new THREE.GridHelper(4,24,0x333333,0x222222);
+  gridH.position.y=-((header.maxZ-header.minZ)/2)*sc-0.08;
+  scene.add(gridH);
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const ptSize=Math.max(0.003,Math.min(0.012,1.5/Math.sqrt(N)));
+  const mat=new THREE.PointsMaterial({size:ptSize,vertexColors:true,sizeAttenuation:true});
+  const pts=new THREE.Points(geo,mat);
+  scene.add(pts);
+  orbitRef.theta=-0.5; orbitRef.phi=1.0; orbitRef.radius=2.8; orbitRef.panX=0; orbitRef.panY=0;
+  return pts;
+}
 
-  setBar('importBar','importPct','importTag',0,'Reading…','active');
-  setBar('colorizeBar','colorizePct','colorizeTag',0,'Waiting','');
-  setBar('exportBar','exportPct','exportTag',0,'Waiting','');
-  setStatus('Reading file…','processing');
+// ═══════════════════════════════════════════════════════════════
+// DROP ZONES — HEIGHT MODE
+// ═══════════════════════════════════════════════════════════════
+function setupDropZone(zoneId,inputId,acceptFn){
+  const zone=document.getElementById(zoneId);
+  const inp=document.getElementById(inputId);
+  zone.addEventListener('click',()=>{ if(!zone.classList.contains('has-file')) inp.click(); });
+  inp.addEventListener('change',e=>{if(e.target.files[0])acceptFn(e.target.files[0]);});
+  zone.addEventListener('dragover',e=>{e.preventDefault();if(!zone.classList.contains('has-file'))zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');if(e.dataTransfer.files[0]&&!zone.classList.contains('has-file'))acceptFn(e.dataTransfer.files[0]);});
+}
+setupDropZone('dropZoneHeight','fileInputHeight',f=>handleHeightFile(f));
+setupDropZone('dropZoneOrthoLas','fileInputOrthoLas',f=>handleOrthoLas(f));
+setupDropZone('dropZoneOrthoTif','fileInputOrthoTif',f=>handleOrthoTif(f));
 
+function markDropZoneDone(zoneId,label){
+  const z=document.getElementById(zoneId);
+  z.classList.add('has-file');
+  z.innerHTML=`<div class="file-ready-label"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#2e7d32" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="#2e7d32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>${label}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HEIGHT MODE — FILE HANDLING
+// ═══════════════════════════════════════════════════════════════
+function handleHeightFile(file){
+  if(!file.name.toLowerCase().endsWith('.las')){
+    document.getElementById('heightPanel').classList.remove('hidden');
+    setStatus('hStatusBox','Only .las files are supported.','error'); return;
+  }
+  hFilename=file.name;
+  document.getElementById('heightPanel').classList.remove('hidden');
+  document.getElementById('hDownloadBtn').classList.add('hidden');
+  ['hPreviewWrap','hPreviewTitle','hColorLegend','hLegendTitle','hSliderSection'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  setBar('hImportBar','hImportPct','hImportTag',0,'Reading…','active');
+  setBar('hColorizeBar','hColorizePct','hColorizeTag',0,'Waiting','');
+  setStatus('hStatusBox','Reading file…','processing');
   const reader=new FileReader();
-  reader.onprogress=e=>{
-    if(e.lengthComputable)
-      setBar('importBar','importPct','importTag',(e.loaded/e.total)*100,
-        `Reading… ${formatBytes(e.loaded)} / ${formatBytes(e.total)}`,'active');
-  };
+  reader.onprogress=e=>{if(e.lengthComputable)setBar('hImportBar','hImportPct','hImportTag',(e.loaded/e.total)*100,`Reading… ${formatBytes(e.loaded)} / ${formatBytes(e.total)}`,'active');};
   reader.onload=e=>{
-    setBar('importBar','importPct','importTag',100,'Done','done');
-    g_buffer=e.target.result;
-    try {
-      const h=parseHeader(g_buffer); g_header=h;
-      document.getElementById('statFilename').textContent=file.name;
-      document.getElementById('statPoints').textContent=fmtInt(h.numPoints);
-      document.getElementById('statMinZ').textContent=fmtNum(h.minZ)+' m';
-      document.getElementById('statMaxZ').textContent=fmtNum(h.maxZ)+' m';
-      document.getElementById('statZRange').textContent=fmtNum(h.maxZ-h.minZ)+' m';
-      document.getElementById('statVersion').textContent=`${h.verMajor}.${h.verMinor}`;
-      document.getElementById('statFormat').textContent=`${h.ptFormat}`;
-      document.getElementById('statSize').textContent=formatBytes(file.size);
-      document.getElementById('legendMin').textContent=fmtNum(h.minZ)+' m';
-      document.getElementById('legendMax').textContent=fmtNum(h.maxZ)+' m';
-      document.getElementById('colorLegend').classList.remove('hidden');
-      document.getElementById('legendTitle').classList.remove('hidden');
-      setBar('colorizeBar','colorizePct','colorizeTag',0,'Starting…','active');
-      setStatus(`Colorizing ${fmtInt(h.numPoints)} points…`,'processing');
-      setTimeout(()=>colorize(h),60);
-    } catch(err){ setStatus('Parse error: '+err.message,'error'); }
+    setBar('hImportBar','hImportPct','hImportTag',100,'Done','done');
+    hBuffer=e.target.result;
+    try{
+      const h=parseHeader(hBuffer); hHeader=h;
+      document.getElementById('hStatFile').textContent=file.name;
+      document.getElementById('hStatPts').textContent=fmtInt(h.numPoints);
+      document.getElementById('hStatMinZ').textContent=fmtNum(h.minZ)+' m';
+      document.getElementById('hStatMaxZ').textContent=fmtNum(h.maxZ)+' m';
+      document.getElementById('hStatZRange').textContent=fmtNum(h.maxZ-h.minZ)+' m';
+      document.getElementById('hStatVer').textContent=`${h.verMajor}.${h.verMinor}`;
+      document.getElementById('hStatFmt').textContent=`${h.ptFormat}`;
+      document.getElementById('hStatSize').textContent=formatBytes(file.size);
+      document.getElementById('hLegendMin').textContent=fmtNum(h.minZ)+' m';
+      document.getElementById('hLegendMax').textContent=fmtNum(h.maxZ)+' m';
+      document.getElementById('hColorLegend').classList.remove('hidden');
+      document.getElementById('hLegendTitle').classList.remove('hidden');
+      setBar('hColorizeBar','hColorizePct','hColorizeTag',0,'Starting…','active');
+      setStatus('hStatusBox',`Colorizing ${fmtInt(h.numPoints)} points…`,'processing');
+      setTimeout(()=>heightColorize(h),60);
+    }catch(err){setStatus('hStatusBox','Parse error: '+err.message,'error');}
   };
-  reader.onerror=()=>setStatus('Failed to read file.','error');
+  reader.onerror=()=>setStatus('hStatusBox','Failed to read file.','error');
   reader.readAsArrayBuffer(file);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COLORIZE
-// ─────────────────────────────────────────────────────────────────────────────
-function colorize(h, customMinZ, customMaxZ) {
-  const {ptOffset,ptFormat,ptRecLen,numPoints,zScale,zOffset}=h;
-  const minZ = customMinZ !== undefined ? customMinZ : h.minZ;
-  const maxZ = customMaxZ !== undefined ? customMaxZ : h.maxZ;
+// ═══════════════════════════════════════════════════════════════
+// HEIGHT COLORIZE
+// ═══════════════════════════════════════════════════════════════
+function heightColorize(h, customMinZ, customMaxZ){
+  const{ptOffset,ptFormat,ptRecLen,numPoints,zScale,zOffset}=h;
+  const minZ=customMinZ!==undefined?customMinZ:h.minZ;
+  const maxZ=customMaxZ!==undefined?customMaxZ:h.maxZ;
   const safe_zR=(maxZ-minZ)<1e-9?1:(maxZ-minZ);
   const inFmt=ptFormat;
   const outFmt=FORMAT_HAS_COLOR[inFmt]?inFmt:(FORMAT_UPGRADE[inFmt]??inFmt);
   const inSize=FORMAT_SIZE[inFmt]??ptRecLen;
   const outSize=FORMAT_SIZE[outFmt]??ptRecLen;
   const rgbOff=FORMAT_RGB_OFF[outFmt];
-  const inView=new Uint8Array(g_buffer);
-  const inDV=new DataView(g_buffer);
-
+  const inView=new Uint8Array(hBuffer),inDV=new DataView(hBuffer);
   let outBuf;
-  try { outBuf=new ArrayBuffer(ptOffset+numPoints*outSize); }
-  catch(e){ setStatus('Out of memory — file too large for browser.','error'); return; }
-  const outBytes=new Uint8Array(outBuf), outDV=new DataView(outBuf);
+  try{outBuf=new ArrayBuffer(ptOffset+numPoints*outSize);}
+  catch(e){setStatus('hStatusBox','Out of memory — file too large.','error');return;}
+  const outBytes=new Uint8Array(outBuf),outDV=new DataView(outBuf);
   outBytes.set(inView.subarray(0,ptOffset));
-  outDV.setUint8(104,outFmt); outDV.setUint16(105,outSize,true);
-  const sw='WingtraLIDAR Height Colorizer';
-  for(let i=0;i<32;i++) outDV.setUint8(58+i,i<sw.length?sw.charCodeAt(i):0);
-
-  const isInitial = customMinZ === undefined;
-  const MAX_PREV=200000;
-  const step=numPoints>MAX_PREV?Math.ceil(numPoints/MAX_PREV):1;
-  if (isInitial) { g_previewXs=[]; g_previewYs=[]; g_previewZs=[]; g_previewStep=step; }
-  const pxs=[], pys=[], pzs=[], pcols=[];
-  const CHUNK=80000; let processed=0;
-
-  function chunk() {
+  buildOutputHeader(inView,outDV,outFmt,outSize);
+  const isInitial=customMinZ===undefined;
+  const MAX_PREV=200000,step=numPoints>MAX_PREV?Math.ceil(numPoints/MAX_PREV):1;
+  if(isInitial){hPreviewXs=[];hPreviewYs=[];hPreviewZs=[];}
+  const pxs=[],pys=[],pzs=[],pcols=[];
+  const CHUNK=80000;let processed=0;
+  function chunk(){
     const end=Math.min(processed+CHUNK,numPoints);
     for(let i=processed;i<end;i++){
-      const io=ptOffset+i*inSize, oo=ptOffset+i*outSize;
+      const io=ptOffset+i*inSize,oo=ptOffset+i*outSize;
       outBytes.set(inView.subarray(io,io+Math.min(inSize,outSize)),oo);
-      const rawZ=inDV.getInt32(io+8,true);
-      const realZ=rawZ*zScale+zOffset;
-      const t=(realZ-minZ)/safe_zR;
-      const col=heightToRGB(t);
-      if(rgbOff!==undefined){
-        outDV.setUint16(oo+rgbOff,   col.r*256,true);
-        outDV.setUint16(oo+rgbOff+2, col.g*256,true);
-        outDV.setUint16(oo+rgbOff+4, col.b*256,true);
-      }
+      const rawZ=inDV.getInt32(io+8,true),realZ=rawZ*zScale+zOffset;
+      const t=(realZ-minZ)/safe_zR,col=heightToRGB(t);
+      if(rgbOff!==undefined){outDV.setUint16(oo+rgbOff,col.r*256,true);outDV.setUint16(oo+rgbOff+2,col.g*256,true);outDV.setUint16(oo+rgbOff+4,col.b*256,true);}
       if(i%step===0){
-        if (isInitial) {
-          g_previewXs.push(inDV.getInt32(io+0,true)*h.xScale+h.xOffset);
-          g_previewYs.push(inDV.getInt32(io+4,true)*h.yScale+h.yOffset);
-          g_previewZs.push(realZ);
-        }
-        pxs.push(isInitial ? g_previewXs[g_previewXs.length-1] : g_previewXs[pxs.length]);
-        pys.push(isInitial ? g_previewYs[g_previewYs.length-1] : g_previewYs[pys.length]);
-        pzs.push(realZ);
-        pcols.push(col);
+        if(isInitial){hPreviewXs.push(inDV.getInt32(io+0,true)*h.xScale+h.xOffset);hPreviewYs.push(inDV.getInt32(io+4,true)*h.yScale+h.yOffset);hPreviewZs.push(realZ);}
+        pxs.push(hPreviewXs[pxs.length]);pys.push(hPreviewYs[pys.length]);pzs.push(realZ);pcols.push(col);
       }
     }
     processed=end;
-    setBar('colorizeBar','colorizePct','colorizeTag',(processed/numPoints)*100,
-      `${fmtInt(processed)} / ${fmtInt(numPoints)} pts`,'active');
-    if(processed<numPoints){ setTimeout(chunk,0); }
-    else {
-      g_colorized=outBuf;
-      setBar('colorizeBar','colorizePct','colorizeTag',100,'Done','done');
-      if (isInitial) {
-        setStatus('Building 3D preview…','processing');
-        setTimeout(()=>{
-          document.getElementById('previewWrap').classList.remove('hidden');
-          document.getElementById('previewTitle').classList.remove('hidden');
-          document.getElementById('previewPtCount').textContent=
-            `${fmtInt(pxs.length)} pts${step>1?' (sampled)':''}`;
-          initThree();
-          buildPointCloud(pxs,pys,pzs,pcols,h);
-          setupSliders(h);
-          setStatus(`Colorization complete &nbsp;·&nbsp; ${fmtInt(numPoints)} points &nbsp;·&nbsp; LAS format ${outFmt}`,'success');
-          document.getElementById('downloadBtn').classList.remove('hidden');
-        },40);
-      } else {
-        // Re-colorize after slider change — just update preview colors
-        updatePreviewColors(minZ, maxZ);
-        document.getElementById('recolorizeBadge').classList.add('hidden');
-        setStatus(`Re-colorized &nbsp;·&nbsp; range ${fmtNum(minZ)} m → ${fmtNum(maxZ)} m`,'success');
-        document.getElementById('downloadBtn').disabled=false;
+    setBar('hColorizeBar','hColorizePct','hColorizeTag',(processed/numPoints)*100,`${fmtInt(processed)} / ${fmtInt(numPoints)} pts`,'active');
+    if(processed<numPoints){setTimeout(chunk,0);return;}
+    hColorized=outBuf;
+    setBar('hColorizeBar','hColorizePct','hColorizeTag',100,'Done','done');
+    if(isInitial){
+      setStatus('hStatusBox','Building 3D preview…','processing');
+      setTimeout(()=>{
+        document.getElementById('hPreviewWrap').classList.remove('hidden');
+        document.getElementById('hPreviewTitle').classList.remove('hidden');
+        document.getElementById('hPreviewPts').textContent=`${fmtInt(pxs.length)} pts${step>1?' (sampled)':''}`;
+        initThreeHeight();
+        hPoints=buildPointCloud(hScene,hOrbit,pxs,pys,pzs,pcols,h);
+        setupHeightSliders(h);
+        setStatus('hStatusBox',`Colorization complete &nbsp;·&nbsp; ${fmtInt(numPoints)} points &nbsp;·&nbsp; format ${outFmt}`,'success');
+        document.getElementById('hDownloadBtn').classList.remove('hidden');
+      },40);
+    } else {
+      // Re-colorize after slider — just update 3D colors
+      if(hPoints){
+        const colorAttr=hPoints.geometry.attributes.color;
+        for(let i=0;i<hPreviewZs.length;i++){const t=(hPreviewZs[i]-minZ)/safe_zR;const c=heightToRGB(t);colorAttr.setXYZ(i,c.r/255,c.g/255,c.b/255);}
+        colorAttr.needsUpdate=true;
       }
+      document.getElementById('hRecolorizeBadge').classList.add('hidden');
+      setStatus('hStatusBox',`Re-colorized &nbsp;·&nbsp; range ${fmtNum(minZ)} m → ${fmtNum(maxZ)} m`,'success');
+      document.getElementById('hDownloadBtn').disabled=false;
     }
   }
   chunk();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SLIDER SETUP & HANDLERS
-// ─────────────────────────────────────────────────────────────────────────────
-function setupSliders(h) {
-  g_userMinZ = h.minZ;
-  g_userMaxZ = h.maxZ;
-  const range = h.maxZ - h.minZ;
-  const decimals = range < 10 ? 3 : range < 100 ? 2 : 1;
-
-  const sliderMin = document.getElementById('sliderMin');
-  const sliderMax = document.getElementById('sliderMax');
-  const inputMin  = document.getElementById('inputMin');
-  const inputMax  = document.getElementById('inputMax');
-
-  sliderMin.min = h.minZ; sliderMin.max = h.maxZ; sliderMin.step = (range / 1000);
-  sliderMax.min = h.minZ; sliderMax.max = h.maxZ; sliderMax.step = (range / 1000);
-  sliderMin.value = h.minZ; sliderMax.value = h.maxZ;
-  inputMin.value  = h.minZ.toFixed(decimals);
-  inputMax.value  = h.maxZ.toFixed(decimals);
-  inputMin.min    = h.minZ; inputMin.max = h.maxZ;
-  inputMax.min    = h.minZ; inputMax.max = h.maxZ;
-  inputMin.step   = (range / 1000).toFixed(4);
-  inputMax.step   = (range / 1000).toFixed(4);
-
-  // Update gradient track fill
+// ═══════════════════════════════════════════════════════════════
+// HEIGHT SLIDERS
+// ═══════════════════════════════════════════════════════════════
+function setupHeightSliders(h){
+  hUserMinZ=h.minZ; hUserMaxZ=h.maxZ;
+  const range=h.maxZ-h.minZ,dec=range<10?3:range<100?2:1;
+  const sMin=document.getElementById('sliderMin'),sMax=document.getElementById('sliderMax');
+  const iMin=document.getElementById('inputMin'),iMax=document.getElementById('inputMax');
+  sMin.min=sMax.min=h.minZ; sMin.max=sMax.max=h.maxZ;
+  sMin.step=sMax.step=range/1000;
+  sMin.value=h.minZ; sMax.value=h.maxZ;
+  iMin.value=h.minZ.toFixed(dec); iMax.value=h.maxZ.toFixed(dec);
+  iMin.min=h.minZ; iMin.max=h.maxZ; iMax.min=h.minZ; iMax.max=h.maxZ;
   updateSliderTrack();
-  document.getElementById('sliderSection').classList.remove('hidden');
-
-  // Slider → number input + instant preview update + debounced full recolorize
-  sliderMin.addEventListener('input', () => {
-    let v = parseFloat(sliderMin.value);
-    if (v >= g_userMaxZ) { v = g_userMaxZ - parseFloat(sliderMin.step); sliderMin.value = v; }
-    g_userMinZ = v;
-    inputMin.value = v.toFixed(decimals);
-    updateSliderTrack();
-    updatePreviewColors(g_userMinZ, g_userMaxZ);
-    scheduleRecolorize();
-  });
-  sliderMax.addEventListener('input', () => {
-    let v = parseFloat(sliderMax.value);
-    if (v <= g_userMinZ) { v = g_userMinZ + parseFloat(sliderMax.step); sliderMax.value = v; }
-    g_userMaxZ = v;
-    inputMax.value = v.toFixed(decimals);
-    updateSliderTrack();
-    updatePreviewColors(g_userMinZ, g_userMaxZ);
-    scheduleRecolorize();
-  });
-
-  // Number input → slider + same updates
-  inputMin.addEventListener('change', () => {
-    let v = Math.max(h.minZ, Math.min(g_userMaxZ - parseFloat(sliderMin.step), parseFloat(inputMin.value)));
-    if (isNaN(v)) v = h.minZ;
-    g_userMinZ = v; sliderMin.value = v; inputMin.value = v.toFixed(decimals);
-    updateSliderTrack();
-    updatePreviewColors(g_userMinZ, g_userMaxZ);
-    scheduleRecolorize();
-  });
-  inputMax.addEventListener('change', () => {
-    let v = Math.min(h.maxZ, Math.max(g_userMinZ + parseFloat(sliderMax.step), parseFloat(inputMax.value)));
-    if (isNaN(v)) v = h.maxZ;
-    g_userMaxZ = v; sliderMax.value = v; inputMax.value = v.toFixed(decimals);
-    updateSliderTrack();
-    updatePreviewColors(g_userMinZ, g_userMaxZ);
-    scheduleRecolorize();
-  });
+  document.getElementById('hSliderSection').classList.remove('hidden');
+  sMin.oninput=()=>{let v=parseFloat(sMin.value);if(v>=hUserMaxZ)v=hUserMaxZ-range/1000;hUserMinZ=v;iMin.value=v.toFixed(dec);updateSliderTrack();scheduleRecolorize();};
+  sMax.oninput=()=>{let v=parseFloat(sMax.value);if(v<=hUserMinZ)v=hUserMinZ+range/1000;hUserMaxZ=v;iMax.value=v.toFixed(dec);updateSliderTrack();scheduleRecolorize();};
+  iMin.onchange=()=>{let v=Math.max(h.minZ,Math.min(hUserMaxZ-range/1000,parseFloat(iMin.value)));if(isNaN(v))v=h.minZ;hUserMinZ=v;sMin.value=v;iMin.value=v.toFixed(dec);updateSliderTrack();scheduleRecolorize();};
+  iMax.onchange=()=>{let v=Math.min(h.maxZ,Math.max(hUserMinZ+range/1000,parseFloat(iMax.value)));if(isNaN(v))v=h.maxZ;hUserMaxZ=v;sMax.value=v;iMax.value=v.toFixed(dec);updateSliderTrack();scheduleRecolorize();};
+}
+function updateSliderTrack(){
+  const h=hHeader;if(!h)return;
+  const range=h.maxZ-h.minZ;if(range<1e-9)return;
+  const p1=((hUserMinZ-h.minZ)/range)*100,p2=((hUserMaxZ-h.minZ)/range)*100;
+  document.getElementById('sliderMin').style.background=`linear-gradient(to right,var(--bg3) 0%,var(--bg3) ${p1}%,#1565c0 ${p1}%,#1565c0 100%)`;
+  document.getElementById('sliderMax').style.background=`linear-gradient(to right,#c62828 0%,#c62828 ${p2}%,var(--bg3) ${p2}%,var(--bg3) 100%)`;
+  document.getElementById('hLegendMin').textContent=fmtNum(hUserMinZ)+' m';
+  document.getElementById('hLegendMax').textContent=fmtNum(hUserMaxZ)+' m';
+}
+function scheduleRecolorize(){
+  document.getElementById('hRecolorizeBadge').classList.remove('hidden');
+  document.getElementById('hDownloadBtn').disabled=true;
+  clearTimeout(hRecolorizeTimer);
+  hRecolorizeTimer=setTimeout(()=>{
+    setBar('hColorizeBar','hColorizePct','hColorizeTag',0,'Re-colorizing…','active');
+    setTimeout(()=>heightColorize(hHeader,hUserMinZ,hUserMaxZ),30);
+  },600);
 }
 
-function updateSliderTrack() {
-  const h = g_header; if (!h) return;
-  const range = h.maxZ - h.minZ;
-  if (range < 1e-9) return;
-  const pctMin = ((g_userMinZ - h.minZ) / range) * 100;
-  const pctMax = ((g_userMaxZ - h.minZ) / range) * 100;
-  document.getElementById('sliderMin').style.background =
-    `linear-gradient(to right, var(--bg3) 0%, var(--bg3) ${pctMin}%, #1565c0 ${pctMin}%, #1565c0 100%)`;
-  document.getElementById('sliderMax').style.background =
-    `linear-gradient(to right, #c62828 0%, #c62828 ${pctMax}%, var(--bg3) ${pctMax}%, var(--bg3) 100%)`;
-  // Update legend labels
-  document.getElementById('legendMin').textContent = fmtNum(g_userMinZ) + ' m';
-  document.getElementById('legendMax').textContent = fmtNum(g_userMaxZ) + ' m';
+// ═══════════════════════════════════════════════════════════════
+// ORTHO MODE — FILE HANDLING
+// ═══════════════════════════════════════════════════════════════
+function handleOrthoLas(file){
+  if(!file.name.toLowerCase().endsWith('.las')){alert('Please select a .las file.');return;}
+  oLasFilename=file.name; oLasReady=false;
+  setBar('oLasBar','oLasPct','oLasTag',0,'Reading…','active');
+  document.getElementById('orthoPanel').classList.remove('hidden');
+  setStatus('oStatusBox','Reading LAS file…','processing');
+  const reader=new FileReader();
+  reader.onprogress=e=>{if(e.lengthComputable)setBar('oLasBar','oLasPct','oLasTag',(e.loaded/e.total)*100,`${formatBytes(e.loaded)} / ${formatBytes(e.total)}`,'active');};
+  reader.onload=e=>{
+    setBar('oLasBar','oLasPct','oLasTag',100,'Done','done');
+    oLasBuffer=e.target.result;
+    try{
+      const h=parseHeader(oLasBuffer); oHeader=h;
+      document.getElementById('oStatLasFile').textContent=file.name;
+      document.getElementById('oStatPts').textContent=fmtInt(h.numPoints);
+      document.getElementById('oStatVer').textContent=`${h.verMajor}.${h.verMinor}`;
+      document.getElementById('oStatLasSize').textContent=formatBytes(file.size);
+      oLasReady=true;
+      markDropZoneDone('dropZoneOrthoLas',file.name);
+      setStatus('oStatusBox',oTifReady?'Both files ready — processing…':'LAS loaded. Now drop your .tif file.','info');
+      if(oTifReady) startOrthoProcessing();
+    }catch(err){setStatus('oStatusBox','LAS parse error: '+err.message,'error');}
+  };
+  reader.onerror=()=>setStatus('oStatusBox','Failed to read LAS.','error');
+  reader.readAsArrayBuffer(file);
 }
 
-function updatePreviewColors(minZ, maxZ) {
-  if (!g_points || g_previewZs.length === 0) return;
-  const safe_zR = (maxZ - minZ) < 1e-9 ? 1 : (maxZ - minZ);
-  const colorAttr = g_points.geometry.attributes.color;
-  for (let i = 0; i < g_previewZs.length; i++) {
-    const t = (g_previewZs[i] - minZ) / safe_zR;
-    const c = heightToRGB(t);
-    colorAttr.setXYZ(i, c.r/255, c.g/255, c.b/255);
+function handleOrthoTif(file){
+  if(!file.name.toLowerCase().match(/\.tiff?$/)){alert('Please select a .tif or .tiff file.');return;}
+  oTifFilename=file.name; oTifReady=false;
+  setBar('oTifBar','oTifPct','oTifTag',0,'Reading…','active');
+  document.getElementById('orthoPanel').classList.remove('hidden');
+  setStatus('oStatusBox','Reading TIF file…','processing');
+  document.getElementById('oStatTifFile').textContent=file.name;
+  document.getElementById('oStatTifSize').textContent=formatBytes(file.size);
+  const reader=new FileReader();
+  reader.onprogress=e=>{if(e.lengthComputable)setBar('oTifBar','oTifPct','oTifTag',(e.loaded/e.total)*100,`${formatBytes(e.loaded)} / ${formatBytes(e.total)}`,'active');};
+  reader.onload=e=>{
+    setBar('oTifBar','oTifPct','oTifTag',100,'Done','done');
+    oTifBuffer=e.target.result;
+    oTifReady=true;
+    markDropZoneDone('dropZoneOrthoTif',file.name);
+    setStatus('oStatusBox',oLasReady?'Both files ready — processing…':'TIF loaded. Now drop your .las file.','info');
+    if(oLasReady) startOrthoProcessing();
+  };
+  reader.onerror=()=>setStatus('oStatusBox','Failed to read TIF.','error');
+  reader.readAsArrayBuffer(file);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ORTHO PROCESSING — SAMPLE RGB FROM GEOTIFF
+// ═══════════════════════════════════════════════════════════════
+async function startOrthoProcessing(){
+  setStatus('oStatusBox','Parsing GeoTIFF…','processing');
+  setBar('oSampleBar','oSamplePct','oSampleTag',0,'Waiting','');
+  setBar('oDecodeBar','oDecodePct','oDecodeTag',0,'Waiting','');
+
+  let tifImage, bbox, tifWidth, tifHeight, bands, numBands, maxVal;
+  try{
+    const tiff=await GeoTIFF.fromArrayBuffer(oTifBuffer);
+    tifImage=await tiff.getImage();
+    bbox=tifImage.getBoundingBox();
+    tifWidth=tifImage.getWidth();
+    tifHeight=tifImage.getHeight();
+    numBands=tifImage.getSamplesPerPixel();
+    if(numBands<3){setStatus('oStatusBox','TIF must have at least 3 bands (RGB). Found: '+numBands,'error');return;}
+    document.getElementById('oStatTifRes').textContent=`${tifWidth} × ${tifHeight}`;
+    document.getElementById('oStatTifBands').textContent=`${numBands} (RGB${numBands>3?'+':')'})`;
+
+    // ── Decode TIF rasters with simulated progress ──
+    // readRasters() has no progress callback, so we animate the bar
+    // while the promise is in flight, then snap to 100% when done.
+    setBar('oDecodeBar','oDecodePct','oDecodeTag',0,'Decoding pixels…','active');
+    setStatus('oStatusBox','Decoding raster data (may take a moment for large TIFs)…','processing');
+
+    let decPct=0, decDone=false;
+    const decTimer=setInterval(()=>{
+      if(decDone)return;
+      // Ease toward 92% while waiting — never reaches 100% on its own
+      decPct=decPct+(92-decPct)*0.06;
+      document.getElementById('oDecodeBar').style.width=decPct+'%';
+      document.getElementById('oDecodePct').textContent=Math.round(decPct)+'%';
+    },120);
+
+    bands=await tifImage.readRasters({interleave:false});
+
+    clearInterval(decTimer);
+    decDone=true;
+    setBar('oDecodeBar','oDecodePct','oDecodeTag',100,'Done','done');
+
+    maxVal=Math.max(...[0,1,2].map(b=>{const arr=bands[b];let m=0;for(let i=0;i<Math.min(arr.length,10000);i++)if(arr[i]>m)m=arr[i];return m;}));
+    setStatus('oStatusBox','Sampling point colors…','processing');
+  }catch(e){
+    setStatus('oStatusBox','GeoTIFF parse error: '+e.message,'error');
+    console.error(e); return;
   }
-  colorAttr.needsUpdate = true;
+
+  const h=oHeader;
+  const{ptOffset,ptFormat,ptRecLen,numPoints,xScale,yScale,zScale,xOffset,yOffset,zOffset}=h;
+  const inFmt=ptFormat;
+  const outFmt=FORMAT_HAS_COLOR[inFmt]?inFmt:(FORMAT_UPGRADE[inFmt]??inFmt);
+  const inSize=FORMAT_SIZE[inFmt]??ptRecLen;
+  const outSize=FORMAT_SIZE[outFmt]??ptRecLen;
+  const rgbOff=FORMAT_RGB_OFF[outFmt];
+  const inView=new Uint8Array(oLasBuffer),inDV=new DataView(oLasBuffer);
+
+  let outBuf;
+  try{outBuf=new ArrayBuffer(ptOffset+numPoints*outSize);}
+  catch(e){setStatus('oStatusBox','Out of memory.','error');return;}
+  const outBytes=new Uint8Array(outBuf),outDV=new DataView(outBuf);
+  outBytes.set(inView.subarray(0,ptOffset));
+  buildOutputHeader(inView,outDV,outFmt,outSize);
+
+  const tifSpanX=bbox[2]-bbox[0],tifSpanY=bbox[3]-bbox[1];
+  const normalize=maxVal>255?(v=>Math.round((v/maxVal)*255)):(v=>v);
+  const rBand=bands[0],gBand=bands[1],bBand=bands[2];
+
+  const MAX_PREV=200000,step=numPoints>MAX_PREV?Math.ceil(numPoints/MAX_PREV):1;
+  const pxs=[],pys=[],pzs=[],pcols=[];
+  const CHUNK=80000;let processed=0;
+
+  setBar('oSampleBar','oSamplePct','oSampleTag',0,'Sampling…','active');
+
+  function chunk(){
+    const end=Math.min(processed+CHUNK,numPoints);
+    for(let i=processed;i<end;i++){
+      const io=ptOffset+i*inSize,oo=ptOffset+i*outSize;
+      outBytes.set(inView.subarray(io,io+Math.min(inSize,outSize)),oo);
+      const wx=inDV.getInt32(io+0,true)*xScale+xOffset;
+      const wy=inDV.getInt32(io+4,true)*yScale+yOffset;
+      const wz=inDV.getInt32(io+8,true)*zScale+zOffset;
+
+      // Map world XY → pixel col/row
+      let col=Math.floor((wx-bbox[0])/tifSpanX*tifWidth);
+      let row=Math.floor((bbox[3]-wy)/tifSpanY*tifHeight);
+      col=Math.max(0,Math.min(tifWidth-1,col));
+      row=Math.max(0,Math.min(tifHeight-1,row));
+      const idx=row*tifWidth+col;
+
+      const r=normalize(rBand[idx]??0);
+      const g=normalize(gBand[idx]??0);
+      const b=normalize(bBand[idx]??0);
+
+      if(rgbOff!==undefined){outDV.setUint16(oo+rgbOff,r*256,true);outDV.setUint16(oo+rgbOff+2,g*256,true);outDV.setUint16(oo+rgbOff+4,b*256,true);}
+      if(i%step===0){pxs.push(wx);pys.push(wy);pzs.push(wz);pcols.push({r,g,b});}
+    }
+    processed=end;
+    setBar('oSampleBar','oSamplePct','oSampleTag',(processed/numPoints)*100,`${fmtInt(processed)} / ${fmtInt(numPoints)} pts`,'active');
+    if(processed<numPoints){setTimeout(chunk,0);return;}
+
+    oColorized=outBuf;
+    setBar('oSampleBar','oSamplePct','oSampleTag',100,'Done','done');
+    setStatus('oStatusBox','Building 3D preview…','processing');
+    setTimeout(()=>{
+      document.getElementById('oPreviewWrap').classList.remove('hidden');
+      document.getElementById('oPreviewTitle').classList.remove('hidden');
+      document.getElementById('oPreviewPts').textContent=`${fmtInt(pxs.length)} pts${step>1?' (sampled)':''}`;
+      initThreeOrtho();
+      oPoints=buildPointCloud(oScene,oOrbit,pxs,pys,pzs,pcols,h);
+      setStatus('oStatusBox',`Colorization complete &nbsp;·&nbsp; ${fmtInt(numPoints)} points &nbsp;·&nbsp; sampled from ${tifWidth}×${tifHeight} ortho`,'success');
+      document.getElementById('oDownloadBtn').classList.remove('hidden');
+    },40);
+  }
+  chunk();
 }
 
-function scheduleRecolorize() {
-  document.getElementById('recolorizeBadge').classList.remove('hidden');
-  document.getElementById('downloadBtn').disabled = true;
-  clearTimeout(g_recolorizeTimer);
-  g_recolorizeTimer = setTimeout(() => {
-    setBar('colorizeBar','colorizePct','colorizeTag', 0, 'Re-colorizing…', 'active');
-    setTimeout(() => colorize(g_header, g_userMinZ, g_userMaxZ), 30);
-  }, 600);
+// ═══════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════
+function startDownload(mode){
+  const btnId=mode==='height'?'hDownloadBtn':'oDownloadBtn';
+  const blockId=mode==='height'?'hExportBlock':'oExportBlock';
+  const barId=mode==='height'?'hExportBar':'oExportBar';
+  const pctId=mode==='height'?'hExportPct':'oExportPct';
+  const tagId=mode==='height'?'hExportTag':'oExportTag';
+  const sbId=mode==='height'?'hStatusBox':'oStatusBox';
+  const buf=mode==='height'?hColorized:oColorized;
+  const fname=mode==='height'?hFilename:oLasFilename;
+  if(!buf)return;
+  document.getElementById(btnId).disabled=true;
+  document.getElementById(blockId).classList.remove('hidden');
+  setBar(barId,pctId,tagId,0,'Starting…','active');
+  setStatus(sbId,'Preparing download…','processing');
+  setTimeout(()=>encodeExport(buf,fname,barId,pctId,tagId,sbId,btnId),30);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EXPORT WITH PROGRESS
-// ─────────────────────────────────────────────────────────────────────────────
-function startDownload() {
-  if (!g_colorized) return;
-  document.getElementById('downloadBtn').disabled = true;
-  document.getElementById('exportProgressBlock').classList.remove('hidden');
-  setBar('exportBar','exportPct','exportTag', 0, 'Starting…', 'active');
-  setStatus('Preparing download…', 'processing');
-  setTimeout(() => encodeExport(), 30);
-}
-async function encodeExport() {
-  const bytes = new Uint8Array(g_colorized);
-  const total = bytes.length;
-  const outName = g_filename.replace(/\.las$/i,'') + '_colorized.las';
-
-  // ── Strategy 1: File System Access API (Chrome/Edge 86+, any file size) ──
-  if (window.showSaveFilePicker) {
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: outName,
-        types: [{ description: 'LAS Point Cloud', accept: { 'application/octet-stream': ['.las'] } }]
-      });
-      const writable = await handle.createWritable();
-      const CHUNK = 1024 * 1024; // 1 MB per write
-      let offset = 0;
-      while (offset < total) {
-        const end = Math.min(offset + CHUNK, total);
-        await writable.write(bytes.subarray(offset, end));
-        offset = end;
-        setBar('exportBar','exportPct','exportTag', (offset/total)*100,
-          `Writing… ${formatBytes(offset)} / ${formatBytes(total)}`, 'active');
-      }
+async function encodeExport(buf,fname,barId,pctId,tagId,sbId,btnId){
+  const bytes=new Uint8Array(buf),total=bytes.length;
+  const outName=fname.replace(/\.las$/i,'')+'_colorized.las';
+  if(window.showSaveFilePicker){
+    try{
+      const handle=await window.showSaveFilePicker({suggestedName:outName,types:[{description:'LAS Point Cloud',accept:{'application/octet-stream':['.las']}}]});
+      const writable=await handle.createWritable();
+      const CHUNK=1024*1024;let offset=0;
+      while(offset<total){const end=Math.min(offset+CHUNK,total);await writable.write(bytes.subarray(offset,end));offset=end;setBar(barId,pctId,tagId,(offset/total)*100,`Writing… ${formatBytes(offset)} / ${formatBytes(total)}`,'active');}
       await writable.close();
-      setBar('exportBar','exportPct','exportTag', 100, 'Done', 'done');
-      setStatus(`File saved &nbsp;·&nbsp; ${formatBytes(total)}`, 'success');
-      document.getElementById('downloadBtn').disabled = false;
-      return;
-    } catch(e) {
-      if (e.name === 'AbortError') {
-        setStatus('Download cancelled.', 'info');
-        document.getElementById('downloadBtn').disabled = false;
-        setBar('exportBar','exportPct','exportTag', 0, 'Cancelled', '');
-        return;
-      }
-      // Any other error: fall through to base64
+      setBar(barId,pctId,tagId,100,'Done','done');
+      setStatus(sbId,`File saved &nbsp;·&nbsp; ${formatBytes(total)}`,'success');
+      document.getElementById(btnId).disabled=false; return;
+    }catch(e){
+      if(e.name==='AbortError'){setStatus(sbId,'Download cancelled.','info');document.getElementById(btnId).disabled=false;setBar(barId,pctId,tagId,0,'Cancelled','');return;}
     }
   }
-
-  // ── Strategy 2: Chunked base64 data URI (smaller files, ~150 MB cap) ──
-  const SIZE_LIMIT = 150 * 1024 * 1024;
-  if (total > SIZE_LIMIT) {
-    setStatus(
-      `File is ${formatBytes(total)} — too large for browser download. ` +
-      `Please use Chrome or Edge for large files (they support direct file saving).`,
-      'error'
-    );
-    document.getElementById('downloadBtn').disabled = false;
-    setBar('exportBar','exportPct','exportTag', 0, 'Too large', '');
-    return;
-  }
-
-  // Chunk size must be multiple of 3 so base64 blocks join without padding breaks
-  const CHUNK = 3 * 16384;
-  let b64 = '', offset = 0;
-
-  function step() {
-    const end = Math.min(offset + CHUNK, total);
-    const slice = bytes.subarray(offset, end);
-    let bin = '';
-    for (let i = 0; i < slice.length; i++) bin += String.fromCharCode(slice[i]);
-    b64 += btoa(bin);
-    offset = end;
-    setBar('exportBar','exportPct','exportTag', (offset/total)*100,
-      `Encoding… ${formatBytes(offset)} / ${formatBytes(total)}`, 'active');
-    if (offset < total) { setTimeout(step, 0); return; }
-
-    setBar('exportBar','exportPct','exportTag', 100, 'Done', 'done');
-    try {
-      const a = document.createElement('a');
-      a.href = 'data:application/octet-stream;base64,' + b64;
-      a.download = outName;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setStatus(`Download started &nbsp;·&nbsp; ${formatBytes(total)}`, 'success');
-    } catch(e) { setStatus('Download failed: ' + e.message, 'error'); }
-    document.getElementById('downloadBtn').disabled = false;
+  const LIMIT=150*1024*1024;
+  if(total>LIMIT){setStatus(sbId,`File is ${formatBytes(total)} — too large for browser download. Use Chrome or Edge for direct file saving.`,'error');document.getElementById(btnId).disabled=false;setBar(barId,pctId,tagId,0,'Too large','');return;}
+  const CHUNK=3*16384;let b64='',offset=0;
+  function step(){
+    const end=Math.min(offset+CHUNK,total),slice=bytes.subarray(offset,end);
+    let bin='';for(let i=0;i<slice.length;i++)bin+=String.fromCharCode(slice[i]);
+    b64+=btoa(bin);offset=end;
+    setBar(barId,pctId,tagId,(offset/total)*100,`Encoding… ${formatBytes(offset)} / ${formatBytes(total)}`,'active');
+    if(offset<total){setTimeout(step,0);return;}
+    setBar(barId,pctId,tagId,100,'Done','done');
+    try{const a=document.createElement('a');a.href='data:application/octet-stream;base64,'+b64;a.download=outName;document.body.appendChild(a);a.click();document.body.removeChild(a);setStatus(sbId,`Download started &nbsp;·&nbsp; ${formatBytes(total)}`,'success');}
+    catch(e){setStatus(sbId,'Download failed: '+e.message,'error');}
+    document.getElementById(btnId).disabled=false;
   }
   step();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 // RESET
-// ─────────────────────────────────────────────────────────────────────────────
-function resetTool(){
-  if(g_renderer){ cancelAnimationFrame(g_animId); g_renderer.dispose(); g_renderer=null; }
-  g_buffer=null; g_colorized=null; g_header=null; g_filename='';
-  g_previewXs=[]; g_previewYs=[]; g_previewZs=[];
-  g_userMinZ=null; g_userMaxZ=null;
-  clearTimeout(g_recolorizeTimer);
-  document.getElementById('processingPanel').classList.add('hidden');
-  document.getElementById('exportProgressBlock').classList.add('hidden');
-  document.getElementById('sliderSection').classList.add('hidden');
-  document.getElementById('recolorizeBadge').classList.add('hidden');
-  document.getElementById('fileInput').value='';
-  document.getElementById('statusBox').innerHTML='';
+// ═══════════════════════════════════════════════════════════════
+function resetMode(mode){
+  if(mode==='height'){
+    if(hRenderer){cancelAnimationFrame(hAnimId);hRenderer.dispose();hRenderer=null;}
+    hBuffer=null;hColorized=null;hHeader=null;hFilename='';
+    hPreviewXs=[];hPreviewYs=[];hPreviewZs=[];hUserMinZ=null;hUserMaxZ=null;
+    clearTimeout(hRecolorizeTimer);
+    document.getElementById('heightPanel').classList.add('hidden');
+    document.getElementById('hExportBlock').classList.add('hidden');
+    document.getElementById('hSliderSection').classList.add('hidden');
+    document.getElementById('hRecolorizeBadge').classList.add('hidden');
+    // Reset drop zone
+    const dz=document.getElementById('dropZoneHeight');
+    dz.classList.remove('has-file');
+    dz.innerHTML=`<div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/><path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="14" r="2.5" fill="#F46F29" opacity="0.35"/><circle cx="40" cy="40" r="2.5" fill="#F46F29" opacity="0.35"/></svg></div><div class="drop-title">Drop your <span>.las</span> file here</div><div class="drop-sub">or click to browse &nbsp;·&nbsp; LAS 1.0–1.4 &nbsp;·&nbsp; Point formats 0–10</div><input type="file" id="fileInputHeight" accept=".las">`;
+    setupDropZone('dropZoneHeight','fileInputHeight',f=>handleHeightFile(f));
+    document.getElementById('hStatusBox').innerHTML='';
+  } else {
+    if(oRenderer){cancelAnimationFrame(oAnimId);oRenderer.dispose();oRenderer=null;}
+    oLasBuffer=null;oTifBuffer=null;oColorized=null;oHeader=null;oLasFilename='';oTifFilename='';
+    oLasReady=false;oTifReady=false;
+    document.getElementById('orthoPanel').classList.add('hidden');
+    document.getElementById('oExportBlock').classList.add('hidden');
+    // Reset both drop zones
+    const lz=document.getElementById('dropZoneOrthoLas');
+    lz.classList.remove('has-file');
+    lz.innerHTML=`<div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/><path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/></svg></div><div class="drop-title"><span>.las</span> file</div><div class="drop-sub">Point cloud input</div><input type="file" id="fileInputOrthoLas" accept=".las">`;
+    const tz=document.getElementById('dropZoneOrthoTif');
+    tz.classList.remove('has-file');
+    tz.innerHTML=`<div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="4" width="44" height="44" rx="4" stroke="#00796b" stroke-width="2"/><rect x="10" y="10" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/><rect x="28" y="10" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/><rect x="10" y="28" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/><rect x="28" y="28" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/></svg></div><div class="drop-title"><span style="color:var(--teal)">.tif</span> file</div><div class="drop-sub">GeoTIFF orthomosaic (RGB)</div><input type="file" id="fileInputOrthoTif" accept=".tif,.tiff">`;
+    setupDropZone('dropZoneOrthoLas','fileInputOrthoLas',f=>handleOrthoLas(f));
+    setupDropZone('dropZoneOrthoTif','fileInputOrthoTif',f=>handleOrthoTif(f));
+    document.getElementById('oStatusBox').innerHTML='';
+    setBar('oLasBar','oLasPct','oLasTag',0,'Waiting','');
+    setBar('oTifBar','oTifPct','oTifTag',0,'Waiting','');
+    setBar('oDecodeBar','oDecodePct','oDecodeTag',0,'Waiting','');
+    setBar('oSampleBar','oSamplePct','oSampleTag',0,'Waiting','');
+  }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════════════════════════
 window.addEventListener('resize',()=>{
-  if(!g_renderer) return;
-  const wrap=document.getElementById('previewWrap');
-  const W=wrap.clientWidth, H=wrap.clientHeight||480;
-  g_renderer.setSize(W,H);
-  g_camera.aspect=W/H;
-  g_camera.updateProjectionMatrix();
+  if(hRenderer){const w=document.getElementById('hPreviewWrap');hRenderer.setSize(w.clientWidth,w.clientHeight||480);hCamera.aspect=w.clientWidth/(w.clientHeight||480);hCamera.updateProjectionMatrix();}
+  if(oRenderer){const w=document.getElementById('oPreviewWrap');oRenderer.setSize(w.clientWidth,w.clientHeight||480);oCamera.aspect=w.clientWidth/(w.clientHeight||480);oCamera.updateProjectionMatrix();}
 });
 </script>
 </body>
