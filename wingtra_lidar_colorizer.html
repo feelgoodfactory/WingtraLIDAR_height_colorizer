@@ -217,6 +217,70 @@ header {
 
 .hidden { display: none !important; }
 
+/* ── Height Range Sliders ── */
+.slider-section {
+  margin-bottom: 20px;
+}
+.slider-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 90px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.slider-row-label {
+  font-size: 11px; font-family: var(--font-mono); color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.08em; text-align: right;
+}
+.slider-row-label span {
+  display: block; font-size: 9px; color: var(--text3); margin-top: 1px;
+}
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 5px;
+  border-radius: 3px; outline: none; cursor: pointer;
+  background: var(--bg3); border: 1px solid var(--border);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--orange); border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(244,111,41,0.4);
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+  transform: scale(1.2); box-shadow: 0 2px 8px rgba(244,111,41,0.5);
+}
+input[type=range]::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--orange); border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(244,111,41,0.4); cursor: pointer;
+}
+#sliderMin::-webkit-slider-thumb { background: #1565c0; box-shadow: 0 1px 4px rgba(21,101,192,0.4); }
+#sliderMin::-webkit-slider-thumb:hover { box-shadow: 0 2px 8px rgba(21,101,192,0.5); }
+#sliderMax::-webkit-slider-thumb { background: #c62828; box-shadow: 0 1px 4px rgba(198,40,40,0.4); }
+#sliderMax::-webkit-slider-thumb:hover { box-shadow: 0 2px 8px rgba(198,40,40,0.5); }
+
+.slider-value-input {
+  width: 100%; padding: 5px 8px;
+  border: 1px solid var(--border2); border-radius: 4px;
+  font-size: 12px; font-family: var(--font-mono); color: var(--text);
+  background: var(--bg2); text-align: right; outline: none;
+  transition: border-color 0.15s;
+}
+.slider-value-input:focus { border-color: var(--orange); background: #fff; }
+.slider-hint {
+  font-size: 10px; font-family: var(--font-mono); color: var(--text3);
+  margin-top: 4px; text-align: center;
+}
+.recolorize-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--orange-lt); border: 1px solid var(--orange);
+  color: var(--orange-dim); font-size: 11px; font-family: var(--font-mono);
+  padding: 4px 10px; border-radius: 3px; margin-top: 8px;
+  animation: fadein 0.2s;
+}
+
 footer {
   margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
   font-size: 11px; font-family: var(--font-mono); color: var(--text3);
@@ -311,6 +375,32 @@ footer {
       <div class="legend-label" id="legendMax">—</div>
     </div>
 
+    <!-- Height Range Sliders -->
+    <div class="slider-section hidden" id="sliderSection">
+      <div class="section-title" style="margin-bottom:14px">Height Color Range</div>
+
+      <div class="slider-row">
+        <div class="slider-row-label">Min Z<span style="color:#1565c0">▬</span></div>
+        <input type="range" id="sliderMin" min="0" max="100" step="any" value="0">
+        <input type="number" class="slider-value-input" id="inputMin" step="0.01">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-row-label">Max Z<span style="color:#c62828">▬</span></div>
+        <input type="range" id="sliderMax" min="0" max="100" step="any" value="100">
+        <input type="number" class="slider-value-input" id="inputMax" step="0.01">
+      </div>
+
+      <div class="slider-hint">
+        Points below Min Z → <span style="color:#1a237e">■</span> deep blue &nbsp;·&nbsp;
+        Points above Max Z → <span style="color:#c62828">■</span> deep red
+      </div>
+      <div id="recolorizeBadge" class="recolorize-badge hidden">
+        <div class="dot pulse" style="background:var(--orange)"></div>
+        Re-colorizing…
+      </div>
+    </div>
+
     <!-- 3D Preview -->
     <div class="section-title hidden" id="previewTitle">3D Point Cloud Preview</div>
     <div class="preview-container hidden" id="previewWrap">
@@ -402,6 +492,11 @@ let g_buffer=null, g_colorized=null, g_header=null, g_filename='';
 let g_renderer=null, g_scene=null, g_camera=null, g_points=null, g_animId=null;
 let g_orbit = {theta:-0.5, phi:1.0, radius:3, panX:0, panY:0};
 let g_drag  = {down:false, lastX:0, lastY:0};
+// Preview sample data (stored for fast re-colorize on slider change)
+let g_previewXs=[], g_previewYs=[], g_previewZs=[], g_previewStep=1;
+// User-defined height range (null = use header values)
+let g_userMinZ=null, g_userMaxZ=null;
+let g_recolorizeTimer=null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THREE.JS
@@ -644,8 +739,10 @@ function handleFile(file) {
 // ─────────────────────────────────────────────────────────────────────────────
 // COLORIZE
 // ─────────────────────────────────────────────────────────────────────────────
-function colorize(h) {
-  const {ptOffset,ptFormat,ptRecLen,numPoints,zScale,zOffset,minZ,maxZ}=h;
+function colorize(h, customMinZ, customMaxZ) {
+  const {ptOffset,ptFormat,ptRecLen,numPoints,zScale,zOffset}=h;
+  const minZ = customMinZ !== undefined ? customMinZ : h.minZ;
+  const maxZ = customMaxZ !== undefined ? customMaxZ : h.maxZ;
   const safe_zR=(maxZ-minZ)<1e-9?1:(maxZ-minZ);
   const inFmt=ptFormat;
   const outFmt=FORMAT_HAS_COLOR[inFmt]?inFmt:(FORMAT_UPGRADE[inFmt]??inFmt);
@@ -664,9 +761,11 @@ function colorize(h) {
   const sw='WingtraLIDAR Height Colorizer';
   for(let i=0;i<32;i++) outDV.setUint8(58+i,i<sw.length?sw.charCodeAt(i):0);
 
+  const isInitial = customMinZ === undefined;
   const MAX_PREV=200000;
   const step=numPoints>MAX_PREV?Math.ceil(numPoints/MAX_PREV):1;
-  const pxs=[],pys=[],pzs=[],pcols=[];
+  if (isInitial) { g_previewXs=[]; g_previewYs=[]; g_previewZs=[]; g_previewStep=step; }
+  const pxs=[], pys=[], pzs=[], pcols=[];
   const CHUNK=80000; let processed=0;
 
   function chunk() {
@@ -684,8 +783,13 @@ function colorize(h) {
         outDV.setUint16(oo+rgbOff+4, col.b*256,true);
       }
       if(i%step===0){
-        pxs.push(inDV.getInt32(io+0,true)*h.xScale+h.xOffset);
-        pys.push(inDV.getInt32(io+4,true)*h.yScale+h.yOffset);
+        if (isInitial) {
+          g_previewXs.push(inDV.getInt32(io+0,true)*h.xScale+h.xOffset);
+          g_previewYs.push(inDV.getInt32(io+4,true)*h.yScale+h.yOffset);
+          g_previewZs.push(realZ);
+        }
+        pxs.push(isInitial ? g_previewXs[g_previewXs.length-1] : g_previewXs[pxs.length]);
+        pys.push(isInitial ? g_previewYs[g_previewYs.length-1] : g_previewYs[pys.length]);
         pzs.push(realZ);
         pcols.push(col);
       }
@@ -697,20 +801,133 @@ function colorize(h) {
     else {
       g_colorized=outBuf;
       setBar('colorizeBar','colorizePct','colorizeTag',100,'Done','done');
-      setStatus('Building 3D preview…','processing');
-      setTimeout(()=>{
-        document.getElementById('previewWrap').classList.remove('hidden');
-        document.getElementById('previewTitle').classList.remove('hidden');
-        document.getElementById('previewPtCount').textContent=
-          `${fmtInt(pxs.length)} pts${step>1?' (sampled)':''}`;
-        initThree();
-        buildPointCloud(pxs,pys,pzs,pcols,h);
-        setStatus(`Colorization complete &nbsp;·&nbsp; ${fmtInt(numPoints)} points &nbsp;·&nbsp; LAS format ${outFmt}`,'success');
-        document.getElementById('downloadBtn').classList.remove('hidden');
-      },40);
+      if (isInitial) {
+        setStatus('Building 3D preview…','processing');
+        setTimeout(()=>{
+          document.getElementById('previewWrap').classList.remove('hidden');
+          document.getElementById('previewTitle').classList.remove('hidden');
+          document.getElementById('previewPtCount').textContent=
+            `${fmtInt(pxs.length)} pts${step>1?' (sampled)':''}`;
+          initThree();
+          buildPointCloud(pxs,pys,pzs,pcols,h);
+          setupSliders(h);
+          setStatus(`Colorization complete &nbsp;·&nbsp; ${fmtInt(numPoints)} points &nbsp;·&nbsp; LAS format ${outFmt}`,'success');
+          document.getElementById('downloadBtn').classList.remove('hidden');
+        },40);
+      } else {
+        // Re-colorize after slider change — just update preview colors
+        updatePreviewColors(minZ, maxZ);
+        document.getElementById('recolorizeBadge').classList.add('hidden');
+        setStatus(`Re-colorized &nbsp;·&nbsp; range ${fmtNum(minZ)} m → ${fmtNum(maxZ)} m`,'success');
+        document.getElementById('downloadBtn').disabled=false;
+      }
     }
   }
   chunk();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SLIDER SETUP & HANDLERS
+// ─────────────────────────────────────────────────────────────────────────────
+function setupSliders(h) {
+  g_userMinZ = h.minZ;
+  g_userMaxZ = h.maxZ;
+  const range = h.maxZ - h.minZ;
+  const decimals = range < 10 ? 3 : range < 100 ? 2 : 1;
+
+  const sliderMin = document.getElementById('sliderMin');
+  const sliderMax = document.getElementById('sliderMax');
+  const inputMin  = document.getElementById('inputMin');
+  const inputMax  = document.getElementById('inputMax');
+
+  sliderMin.min = h.minZ; sliderMin.max = h.maxZ; sliderMin.step = (range / 1000);
+  sliderMax.min = h.minZ; sliderMax.max = h.maxZ; sliderMax.step = (range / 1000);
+  sliderMin.value = h.minZ; sliderMax.value = h.maxZ;
+  inputMin.value  = h.minZ.toFixed(decimals);
+  inputMax.value  = h.maxZ.toFixed(decimals);
+  inputMin.min    = h.minZ; inputMin.max = h.maxZ;
+  inputMax.min    = h.minZ; inputMax.max = h.maxZ;
+  inputMin.step   = (range / 1000).toFixed(4);
+  inputMax.step   = (range / 1000).toFixed(4);
+
+  // Update gradient track fill
+  updateSliderTrack();
+  document.getElementById('sliderSection').classList.remove('hidden');
+
+  // Slider → number input + instant preview update + debounced full recolorize
+  sliderMin.addEventListener('input', () => {
+    let v = parseFloat(sliderMin.value);
+    if (v >= g_userMaxZ) { v = g_userMaxZ - parseFloat(sliderMin.step); sliderMin.value = v; }
+    g_userMinZ = v;
+    inputMin.value = v.toFixed(decimals);
+    updateSliderTrack();
+    updatePreviewColors(g_userMinZ, g_userMaxZ);
+    scheduleRecolorize();
+  });
+  sliderMax.addEventListener('input', () => {
+    let v = parseFloat(sliderMax.value);
+    if (v <= g_userMinZ) { v = g_userMinZ + parseFloat(sliderMax.step); sliderMax.value = v; }
+    g_userMaxZ = v;
+    inputMax.value = v.toFixed(decimals);
+    updateSliderTrack();
+    updatePreviewColors(g_userMinZ, g_userMaxZ);
+    scheduleRecolorize();
+  });
+
+  // Number input → slider + same updates
+  inputMin.addEventListener('change', () => {
+    let v = Math.max(h.minZ, Math.min(g_userMaxZ - parseFloat(sliderMin.step), parseFloat(inputMin.value)));
+    if (isNaN(v)) v = h.minZ;
+    g_userMinZ = v; sliderMin.value = v; inputMin.value = v.toFixed(decimals);
+    updateSliderTrack();
+    updatePreviewColors(g_userMinZ, g_userMaxZ);
+    scheduleRecolorize();
+  });
+  inputMax.addEventListener('change', () => {
+    let v = Math.min(h.maxZ, Math.max(g_userMinZ + parseFloat(sliderMax.step), parseFloat(inputMax.value)));
+    if (isNaN(v)) v = h.maxZ;
+    g_userMaxZ = v; sliderMax.value = v; inputMax.value = v.toFixed(decimals);
+    updateSliderTrack();
+    updatePreviewColors(g_userMinZ, g_userMaxZ);
+    scheduleRecolorize();
+  });
+}
+
+function updateSliderTrack() {
+  const h = g_header; if (!h) return;
+  const range = h.maxZ - h.minZ;
+  if (range < 1e-9) return;
+  const pctMin = ((g_userMinZ - h.minZ) / range) * 100;
+  const pctMax = ((g_userMaxZ - h.minZ) / range) * 100;
+  document.getElementById('sliderMin').style.background =
+    `linear-gradient(to right, var(--bg3) 0%, var(--bg3) ${pctMin}%, #1565c0 ${pctMin}%, #1565c0 100%)`;
+  document.getElementById('sliderMax').style.background =
+    `linear-gradient(to right, #c62828 0%, #c62828 ${pctMax}%, var(--bg3) ${pctMax}%, var(--bg3) 100%)`;
+  // Update legend labels
+  document.getElementById('legendMin').textContent = fmtNum(g_userMinZ) + ' m';
+  document.getElementById('legendMax').textContent = fmtNum(g_userMaxZ) + ' m';
+}
+
+function updatePreviewColors(minZ, maxZ) {
+  if (!g_points || g_previewZs.length === 0) return;
+  const safe_zR = (maxZ - minZ) < 1e-9 ? 1 : (maxZ - minZ);
+  const colorAttr = g_points.geometry.attributes.color;
+  for (let i = 0; i < g_previewZs.length; i++) {
+    const t = (g_previewZs[i] - minZ) / safe_zR;
+    const c = heightToRGB(t);
+    colorAttr.setXYZ(i, c.r/255, c.g/255, c.b/255);
+  }
+  colorAttr.needsUpdate = true;
+}
+
+function scheduleRecolorize() {
+  document.getElementById('recolorizeBadge').classList.remove('hidden');
+  document.getElementById('downloadBtn').disabled = true;
+  clearTimeout(g_recolorizeTimer);
+  g_recolorizeTimer = setTimeout(() => {
+    setBar('colorizeBar','colorizePct','colorizeTag', 0, 'Re-colorizing…', 'active');
+    setTimeout(() => colorize(g_header, g_userMinZ, g_userMaxZ), 30);
+  }, 600);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -809,8 +1026,13 @@ async function encodeExport() {
 function resetTool(){
   if(g_renderer){ cancelAnimationFrame(g_animId); g_renderer.dispose(); g_renderer=null; }
   g_buffer=null; g_colorized=null; g_header=null; g_filename='';
+  g_previewXs=[]; g_previewYs=[]; g_previewZs=[];
+  g_userMinZ=null; g_userMaxZ=null;
+  clearTimeout(g_recolorizeTimer);
   document.getElementById('processingPanel').classList.add('hidden');
   document.getElementById('exportProgressBlock').classList.add('hidden');
+  document.getElementById('sliderSection').classList.add('hidden');
+  document.getElementById('recolorizeBadge').classList.add('hidden');
   document.getElementById('fileInput').value='';
   document.getElementById('statusBox').innerHTML='';
 }
