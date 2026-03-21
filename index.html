@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WingtraLIDAR Height Colorizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Three.js must load before the module so window.THREE is available -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --orange:      #F46F29;
+  --orange-lt:   #FDE8D8;
+  --orange-dim:  #d05e1e;
+  --bg:          #ffffff;
+  --bg2:         #f8f8f8;
+  --bg3:         #f2f2f2;
+  --border:      #e0e0e0;
+  --border2:     #cccccc;
+  --text:        #1a1a1a;
+  --text2:       #555555;
+  --text3:       #999999;
+  --green:       #2e7d32;
+  --green-lt:    #e8f5e9;
+  --red:         #c62828;
+  --red-lt:      #ffebee;
+  --blue-lt:     #e3f2fd;
+  --blue:        #1565c0;
+  --font-ui:     'Rajdhani', sans-serif;
+  --font-mono:   'JetBrains Mono', monospace;
+}
+
+html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; overflow-x: hidden; }
+.app { max-width: 1100px; margin: 0 auto; padding: 0 24px 60px; }
+
+/* ── Header ── */
+header { display: flex; align-items: center; gap: 16px; padding: 24px 0 20px; border-bottom: 2px solid var(--orange); margin-bottom: 28px; }
+.logo-hex { width: 40px; height: 40px; background: var(--orange); clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.logo-hex svg { width: 20px; height: 20px; }
+.header-text h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1; }
+.header-text h1 span { color: var(--orange); }
+.header-text p { font-size: 12px; color: var(--text3); font-family: var(--font-mono); margin-top: 3px; }
+.header-badge { margin-left: auto; background: var(--orange); color: #fff; padding: 4px 12px; font-size: 11px; font-family: var(--font-mono); letter-spacing: 0.08em; border-radius: 2px; }
+
+/* ── Drop zone ── */
+.drop-zone { border: 2px dashed var(--border2); border-radius: 8px; background: var(--bg2); padding: 48px 32px; text-align: center; cursor: pointer; transition: all 0.2s; }
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--orange); background: var(--orange-lt); }
+.drop-zone.drag-over { transform: scale(1.005); }
+.drop-icon { width: 52px; height: 52px; margin: 0 auto 16px; }
+.drop-icon svg { width: 100%; height: 100%; }
+.drop-title { font-size: 19px; font-weight: 600; margin-bottom: 6px; }
+.drop-title span { color: var(--orange); }
+.drop-sub { font-size: 12px; color: var(--text3); font-family: var(--font-mono); }
+#fileInput { display: none; }
+
+/* ── Panel ── */
+.panel { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-top: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+.section-title { font-size: 11px; font-family: var(--font-mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── Stats ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 24px; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px; }
+.stat-label { font-size: 10px; font-family: var(--font-mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.stat-value { font-size: 16px; font-weight: 600; font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-value.accent { color: var(--orange); }
+
+/* ── Progress ── */
+.progress-block { margin-bottom: 15px; }
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.progress-name { font-size: 12px; font-family: var(--font-mono); color: var(--text2); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.phase-tag { background: var(--bg3); border: 1px solid var(--border); border-radius: 2px; padding: 1px 7px; font-size: 10px; color: var(--text3); transition: all 0.2s; }
+.phase-tag.active { background: var(--orange-lt); border-color: var(--orange); color: var(--orange-dim); }
+.phase-tag.done   { background: var(--green-lt);  border-color: #a5d6a7;       color: var(--green); }
+.progress-pct { font-size: 12px; font-family: var(--font-mono); color: var(--text3); min-width: 36px; text-align: right; }
+.progress-track { height: 6px; background: var(--bg3); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+.progress-fill { height: 100%; border-radius: 4px; width: 0%; transition: width 0.12s; position: relative; overflow: hidden; }
+.progress-fill.import-fill   { background: linear-gradient(90deg, #1565c0, #42a5f5); }
+.progress-fill.colorize-fill { background: linear-gradient(90deg, var(--orange-dim), var(--orange)); }
+.progress-fill.export-fill   { background: linear-gradient(90deg, #2e7d32, #66bb6a); }
+.progress-fill::after { content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent); animation: shimmer 1.4s infinite; }
+.progress-fill.done::after { display: none; }
+@keyframes shimmer { to { left: 200%; } }
+
+/* ── Legend ── */
+.legend-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.legend-label { font-size: 11px; font-family: var(--font-mono); color: var(--text2); white-space: nowrap; }
+.legend-bar { flex: 1; height: 18px; border-radius: 3px; border: 1px solid var(--border); background: linear-gradient(90deg, #1a237e 0%, #0288d1 17%, #00acc1 33%, #2e7d32 50%, #f9a825 67%, #F46F29 83%, #c62828 100%); }
+.legend-ticks { display: flex; justify-content: space-between; margin-top: 3px; font-size: 10px; font-family: var(--font-mono); color: var(--text3); }
+
+/* ── 3D Preview ── */
+.preview-container { position: relative; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: #111418; margin-bottom: 20px; height: 480px; }
+#threeCanvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; }
+#threeCanvas:active { cursor: grabbing; }
+.view-toggle { position: absolute; top: 10px; left: 10px; display: flex; gap: 4px; }
+.view-btn { background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.15); border-radius: 3px; font-size: 10px; font-family: var(--font-mono); padding: 4px 9px; cursor: pointer; transition: all 0.15s; backdrop-filter: blur(4px); }
+.view-btn.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+.view-btn:hover:not(.active) { background: rgba(0,0,0,0.8); color: #fff; }
+.preview-badges { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.preview-badge { background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.7); font-size: 10px; font-family: var(--font-mono); padding: 3px 9px; border-radius: 3px; backdrop-filter: blur(4px); }
+.preview-badge.orange { color: #F46F29; }
+.controls-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.6); font-size: 10px; font-family: var(--font-mono); padding: 5px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; backdrop-filter: blur(4px); }
+
+/* ── Status ── */
+.status-msg { padding: 10px 14px; border-radius: 5px; font-size: 12px; font-family: var(--font-mono); margin-top: 14px; display: flex; align-items: center; gap: 9px; animation: fadein 0.25s; }
+@keyframes fadein { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
+.status-msg.info       { background: var(--blue-lt);  border: 1px solid #90caf9; color: var(--blue); }
+.status-msg.success    { background: var(--green-lt); border: 1px solid #a5d6a7; color: var(--green); }
+.status-msg.error      { background: var(--red-lt);   border: 1px solid #ef9a9a; color: var(--red); }
+.status-msg.processing { background: var(--orange-lt);border: 1px solid #ffcc80; color: var(--orange-dim); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.dot.pulse { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.5)} }
+
+/* ── Buttons ── */
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 5px; border: none; font-family: var(--font-ui); font-size: 14px; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; transition: all 0.18s; text-transform: uppercase; }
+.btn-primary { background: var(--orange); color: #fff; box-shadow: 0 2px 8px rgba(244,111,41,0.3); }
+.btn-primary:hover:not(:disabled) { background: var(--orange-dim); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(244,111,41,0.4); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-secondary { background: var(--bg2); color: var(--text2); border: 1px solid var(--border2); }
+.btn-secondary:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-lt); }
+
+.hidden { display: none !important; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 11px; font-family: var(--font-mono); color: var(--text3); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo-hex">
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 2L18 6v8l-8 4-8-4V6z" stroke="white" stroke-width="1.5" fill="none"/>
+        <circle cx="10" cy="7"  r="1.4" fill="white"/>
+        <circle cx="6"  cy="13" r="1.4" fill="white"/>
+        <circle cx="14" cy="13" r="1.4" fill="white"/>
+        <line x1="10" y1="7" x2="6"  y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
+        <line x1="10" y1="7" x2="14" y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
+        <line x1="6"  y1="13" x2="14" y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Wingtra<span>LIDAR</span> Height Colorizer</h1>
+      <p>// z-value colorization for .las point clouds</p>
+    </div>
+    <div class="header-badge">v1.2.0</div>
+  </header>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-icon">
+      <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/>
+        <path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="12" cy="14" r="2.5" fill="#F46F29" opacity="0.35"/>
+        <circle cx="40" cy="40" r="2.5" fill="#F46F29" opacity="0.35"/>
+        <circle cx="40" cy="14" r="2.5" fill="#F46F29" opacity="0.2"/>
+        <circle cx="12" cy="40" r="2.5" fill="#F46F29" opacity="0.2"/>
+      </svg>
+    </div>
+    <div class="drop-title">Drop your <span>.las</span> file here</div>
+    <div class="drop-sub">or click to browse &nbsp;·&nbsp; LAS 1.0–1.4 &nbsp;·&nbsp; Point formats 0–10</div>
+    <input type="file" id="fileInput" accept=".las">
+  </div>
+
+  <div class="panel hidden" id="processingPanel">
+
+    <div class="section-title">File Info</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Filename</div><div class="stat-value" id="statFilename" style="font-size:12px">—</div></div>
+      <div class="stat-card"><div class="stat-label">Points</div><div class="stat-value accent" id="statPoints">—</div></div>
+      <div class="stat-card"><div class="stat-label">Min Z</div><div class="stat-value" id="statMinZ">—</div></div>
+      <div class="stat-card"><div class="stat-label">Max Z</div><div class="stat-value" id="statMaxZ">—</div></div>
+      <div class="stat-card"><div class="stat-label">Z Range</div><div class="stat-value" id="statZRange">—</div></div>
+      <div class="stat-card"><div class="stat-label">LAS Version</div><div class="stat-value" id="statVersion">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pt Format</div><div class="stat-value" id="statFormat">—</div></div>
+      <div class="stat-card"><div class="stat-label">File Size</div><div class="stat-value" id="statSize">—</div></div>
+    </div>
+
+    <div class="section-title">Progress</div>
+
+    <div class="progress-block">
+      <div class="progress-header">
+        <div class="progress-name"><span>Import</span><span class="phase-tag" id="importTag">Waiting</span></div>
+        <div class="progress-pct" id="importPct">0%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill import-fill" id="importBar"></div></div>
+    </div>
+
+    <div class="progress-block" style="margin-bottom:0">
+      <div class="progress-header">
+        <div class="progress-name"><span>Colorize</span><span class="phase-tag" id="colorizeTag">Waiting</span></div>
+        <div class="progress-pct" id="colorizePct">0%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill colorize-fill" id="colorizeBar"></div></div>
+    </div>
+
+    <div id="statusBox"></div>
+
+    <div class="section-title hidden" id="legendTitle" style="margin-top:22px">Height Color Scale</div>
+    <div class="legend-row hidden" id="colorLegend">
+      <div class="legend-label" id="legendMin">—</div>
+      <div style="flex:1">
+        <div class="legend-bar"></div>
+        <div class="legend-ticks"><span>Low</span><span>25%</span><span>Mid</span><span>75%</span><span>High</span></div>
+      </div>
+      <div class="legend-label" id="legendMax">—</div>
+    </div>
+
+    <div class="section-title hidden" id="previewTitle">3D Point Cloud Preview</div>
+    <div class="preview-container hidden" id="previewWrap">
+      <canvas id="threeCanvas"></canvas>
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn3d"    onclick="UI.setView('3d')">3D</button>
+        <button class="view-btn"        id="btnTop"   onclick="UI.setView('top')">Top</button>
+        <button class="view-btn"        id="btnFront" onclick="UI.setView('front')">Front</button>
+        <button class="view-btn"        id="btnSide"  onclick="UI.setView('side')">Side</button>
+      </div>
+      <div class="preview-badges">
+        <div class="preview-badge orange" id="previewPtCount">—</div>
+        <div class="preview-badge">Drag · Scroll · Shift+Drag</div>
+      </div>
+      <div class="controls-hint">🖱 Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Shift+Drag to pan</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary hidden" id="downloadBtn" onclick="UI.startDownload()">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path d="M7.5 2v8M5 7l2.5 2.5L10 7M2 12h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Download Colorized .LAS
+      </button>
+      <button class="btn btn-secondary" onclick="UI.reset()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 6.5C2 4.01 4.01 2 6.5 2c1.45 0 2.75.66 3.61 1.7M11 6.5C11 8.99 8.99 11 6.5 11c-1.45 0-2.75-.66-3.61-1.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M10.5 2v2.5h-2.5M2.5 11V8.5H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Load New File
+      </button>
+    </div>
+
+    <!-- Export progress (shown only when downloading) -->
+    <div class="progress-block hidden" id="exportProgressBlock" style="margin-top:12px;margin-bottom:0">
+      <div class="progress-header">
+        <div class="progress-name"><span>Export</span><span class="phase-tag" id="exportTag">Waiting</span></div>
+        <div class="progress-pct" id="exportPct">0%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill export-fill" id="exportBar"></div></div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>WingtraLIDAR Height Colorizer &nbsp;·&nbsp; All processing runs locally in your browser</span>
+    <span>No data is uploaded to any server</span>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     UI CONTROLLER  —  imports the library and wires it to the DOM
+════════════════════════════════════════════════════════════════════════════ -->
+<script type="module">
+import {
+  parseLASHeader,
+  colorizeLAS,
+  saveLAS,
+  createPreview,
+  formatBytes,
+  fmtNum,
+  fmtInt,
+} from './wingtra-lidar-colorizer.js';
+
+// ── State ────────────────────────────────────────────────────────────────────
+let state = {
+  buffer:     null,   // original ArrayBuffer
+  colorized:  null,   // ColorizeResult
+  header:     null,   // LASHeader
+  filename:   '',
+  preview:    null,   // PreviewController
+};
+
+// ── DOM helpers ──────────────────────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const show = id => $(id).classList.remove('hidden');
+const hide = id => $(id).classList.add('hidden');
+
+function setBar(barId, pctId, tagId, pct, label, status) {
+  $(barId).style.width = pct + '%';
+  $(pctId).textContent = Math.round(pct) + '%';
+  const tag = $(tagId);
+  if (label) tag.textContent = label;
+  tag.className = 'phase-tag' +
+    (status === 'active' ? ' active' : status === 'done' ? ' done active' : '');
+  if (status === 'done') $(barId).classList.add('done');
+  else $(barId).classList.remove('done');
+}
+
+function setStatus(msg, type = 'info') {
+  $('statusBox').innerHTML =
+    `<div class="status-msg ${type}">` +
+    `<div class="dot${type === 'processing' ? ' pulse' : ''}"></div>${msg}</div>`;
+}
+
+// ── Drop zone ────────────────────────────────────────────────────────────────
+const dropZone  = $('dropZone');
+const fileInput = $('fileInput');
+
+dropZone.addEventListener('click',     () => fileInput.click());
+fileInput.addEventListener('change',   e  => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+dropZone.addEventListener('dragover',  e  => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',      e  => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+// ── File handler ─────────────────────────────────────────────────────────────
+async function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.las')) {
+    show('processingPanel');
+    setStatus('Error: Only .las files are supported.', 'error');
+    return;
+  }
+
+  state.filename = file.name;
+  show('processingPanel');
+  hide('downloadBtn');
+  ['previewWrap','previewTitle','colorLegend','legendTitle','exportProgressBlock']
+    .forEach(hide);
+
+  setBar('importBar',   'importPct',   'importTag',   0, 'Reading…', 'active');
+  setBar('colorizeBar', 'colorizePct', 'colorizeTag', 0, 'Waiting',  '');
+  setBar('exportBar',   'exportPct',   'exportTag',   0, 'Waiting',  '');
+  setStatus('Reading file…', 'processing');
+
+  // ── 1. Read file ──────────────────────────────────────────────────────────
+  state.buffer = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onprogress = e => {
+      if (e.lengthComputable)
+        setBar('importBar', 'importPct', 'importTag',
+          (e.loaded / e.total) * 100,
+          `Reading… ${formatBytes(e.loaded)} / ${formatBytes(e.total)}`, 'active');
+    };
+    reader.onload  = e => resolve(e.target.result);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsArrayBuffer(file);
+  });
+
+  setBar('importBar', 'importPct', 'importTag', 100, 'Done', 'done');
+
+  // ── 2. Parse header ───────────────────────────────────────────────────────
+  let h;
+  try {
+    h = parseLASHeader(state.buffer);
+    state.header = h;
+  } catch (err) {
+    setStatus('Parse error: ' + err.message, 'error'); return;
+  }
+
+  $('statFilename').textContent = file.name;
+  $('statPoints').textContent   = fmtInt(h.numPoints);
+  $('statMinZ').textContent     = fmtNum(h.minZ) + ' m';
+  $('statMaxZ').textContent     = fmtNum(h.maxZ) + ' m';
+  $('statZRange').textContent   = fmtNum(h.maxZ - h.minZ) + ' m';
+  $('statVersion').textContent  = `${h.verMajor}.${h.verMinor}`;
+  $('statFormat').textContent   = `${h.ptFormat}`;
+  $('statSize').textContent     = formatBytes(file.size);
+  $('legendMin').textContent    = fmtNum(h.minZ) + ' m';
+  $('legendMax').textContent    = fmtNum(h.maxZ) + ' m';
+  show('colorLegend'); show('legendTitle');
+
+  // ── 3. Colorize ───────────────────────────────────────────────────────────
+  setBar('colorizeBar', 'colorizePct', 'colorizeTag', 0, 'Starting…', 'active');
+  setStatus(`Colorizing ${fmtInt(h.numPoints)} points…`, 'processing');
+
+  try {
+    state.colorized = await colorizeLAS(state.buffer, h, ev => {
+      setBar('colorizeBar', 'colorizePct', 'colorizeTag', ev.pct, ev.label, 'active');
+    });
+  } catch (err) {
+    setStatus('Colorization error: ' + err.message, 'error'); return;
+  }
+
+  setBar('colorizeBar', 'colorizePct', 'colorizeTag', 100, 'Done', 'done');
+
+  // ── 4. 3D preview ─────────────────────────────────────────────────────────
+  setStatus('Building 3D preview…', 'processing');
+
+  // Destroy any existing preview before re-creating
+  if (state.preview) state.preview.destroy();
+
+  show('previewWrap'); show('previewTitle');
+  state.preview = createPreview($('threeCanvas'), $('previewWrap'));
+  state.preview.load(state.colorized, h);
+
+  const { xs } = state.colorized.previewSamples;
+  const step    = h.numPoints > 200_000 ? Math.ceil(h.numPoints / 200_000) : 1;
+  $('previewPtCount').textContent =
+    `${fmtInt(xs.length)} pts${step > 1 ? ' (sampled)' : ''}`;
+
+  setStatus(
+    `Colorization complete &nbsp;·&nbsp; ${fmtInt(h.numPoints)} points ` +
+    `&nbsp;·&nbsp; LAS format ${state.colorized.outFormat}`,
+    'success'
+  );
+  show('downloadBtn');
+}
+
+// ── Download ─────────────────────────────────────────────────────────────────
+async function startDownload() {
+  if (!state.colorized) return;
+  $('downloadBtn').disabled = true;
+  show('exportProgressBlock');
+  setBar('exportBar', 'exportPct', 'exportTag', 0, 'Starting…', 'active');
+  setStatus('Preparing download…', 'processing');
+
+  const outName = state.filename.replace(/\.las$/i, '') + '_colorized.las';
+  try {
+    await saveLAS(state.colorized.colorizedBuffer, outName, ev => {
+      setBar('exportBar', 'exportPct', 'exportTag', ev.pct, ev.label, 'active');
+    });
+    setBar('exportBar', 'exportPct', 'exportTag', 100, 'Done', 'done');
+    setStatus(`File saved &nbsp;·&nbsp; ${formatBytes(state.colorized.colorizedBuffer.byteLength)}`, 'success');
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      setStatus('Download cancelled.', 'info');
+      setBar('exportBar', 'exportPct', 'exportTag', 0, 'Cancelled', '');
+    } else {
+      setStatus('Download failed: ' + err.message, 'error');
+      setBar('exportBar', 'exportPct', 'exportTag', 0, 'Error', '');
+    }
+  }
+  $('downloadBtn').disabled = false;
+}
+
+// ── View toggle ───────────────────────────────────────────────────────────────
+function setView(mode) {
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  $('btn' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+  if (state.preview) state.preview.setView(mode);
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+function reset() {
+  if (state.preview) { state.preview.destroy(); state.preview = null; }
+  state = { buffer: null, colorized: null, header: null, filename: '', preview: null };
+  $('fileInput').value = '';
+  $('statusBox').innerHTML = '';
+  hide('processingPanel');
+}
+
+// ── Resize handler ────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  if (state.preview) state.preview.resize();
+});
+
+// Expose to inline onclick attributes
+window.UI = { startDownload, setView, reset };
+</script>
+</body>
+</html>
