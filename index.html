@@ -3,36 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WingtraLIDAR Colorizer</title>
+<title>WingtraLIDAR Colorizer & Classifier Beta</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 :root {
-  --orange:     #F46F29;
-  --orange-lt:  #FDE8D8;
-  --orange-dim: #d05e1e;
-  --bg:         #ffffff;
-  --bg2:        #f8f8f8;
-  --bg3:        #f2f2f2;
-  --border:     #e0e0e0;
-  --border2:    #cccccc;
-  --text:       #1a1a1a;
-  --text2:      #555555;
-  --text3:      #999999;
-  --green:      #2e7d32;
-  --green-lt:   #e8f5e9;
-  --red:        #c62828;
-  --red-lt:     #ffebee;
-  --blue:       #1565c0;
-  --blue-lt:    #e3f2fd;
-  --teal:       #00796b;
-  --teal-lt:    #e0f2f1;
+  --orange:     #F46F29; --orange-lt:  #FDE8D8; --orange-dim: #d05e1e;
+  --bg:         #ffffff; --bg2:        #f8f8f8; --bg3:        #f2f2f2;
+  --border:     #e0e0e0; --border2:    #cccccc;
+  --text:       #1a1a1a; --text2:      #555555; --text3:      #999999;
+  --green:      #2e7d32; --green-lt:   #e8f5e9;
+  --red:        #c62828; --red-lt:     #ffebee;
+  --blue:       #1565c0; --blue-lt:    #e3f2fd;
+  --teal:       #00796b; --teal-lt:    #e0f2f1;
+  --brown:      #5d4037; --brown-lt:   #efebe9;
   --font-ui:    'Rajdhani', sans-serif;
   --font-mono:  'JetBrains Mono', monospace;
 }
-html, body { min-height:100%; background:var(--bg); color:var(--text); font-family:var(--font-ui); font-size:15px; line-height:1.5; overflow-x:hidden; }
+html,body { min-height:100%; background:var(--bg); color:var(--text); font-family:var(--font-ui); font-size:15px; line-height:1.5; overflow-x:hidden; }
 .app { max-width:1100px; margin:0 auto; padding:0 24px 60px; }
 
 /* ── Header ── */
@@ -45,22 +35,20 @@ header { display:flex; align-items:center; gap:16px; padding:24px 0 20px; border
 .header-badge { margin-left:auto; background:var(--orange); color:#fff; padding:4px 12px; font-size:11px; font-family:var(--font-mono); letter-spacing:0.08em; border-radius:2px; }
 
 /* ── Mode Selector ── */
-.mode-selector { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
-.mode-card {
-  border:2px solid var(--border); border-radius:10px; padding:24px 22px;
-  cursor:pointer; transition:all 0.2s; background:var(--bg2); position:relative; overflow:hidden;
-}
+.mode-selector { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:24px; }
+@media(max-width:780px){ .mode-selector{grid-template-columns:1fr 1fr;} }
+@media(max-width:500px){ .mode-selector{grid-template-columns:1fr;} }
+.mode-card { border:2px solid var(--border); border-radius:10px; padding:20px 18px; cursor:pointer; transition:all 0.2s; background:var(--bg2); position:relative; overflow:hidden; }
 .mode-card:hover { border-color:var(--orange); background:var(--orange-lt); transform:translateY(-1px); box-shadow:0 4px 16px rgba(244,111,41,0.12); }
 .mode-card.active { border-color:var(--orange); background:var(--orange-lt); box-shadow:0 4px 16px rgba(244,111,41,0.15); }
 .mode-card.active::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:var(--orange); }
-.mode-icon { width:44px; height:44px; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; background:var(--bg3); transition:background 0.2s; }
+.mode-icon { width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; background:var(--bg3); transition:background 0.2s; }
 .mode-card:hover .mode-icon, .mode-card.active .mode-icon { background:rgba(244,111,41,0.15); }
-.mode-icon svg { width:24px; height:24px; }
-.mode-card h3 { font-size:17px; font-weight:700; letter-spacing:0.03em; margin-bottom:5px; }
-.mode-card p { font-size:12px; color:var(--text2); font-family:var(--font-mono); line-height:1.5; }
+.mode-icon svg { width:22px; height:22px; }
+.mode-card h3 { font-size:16px; font-weight:700; letter-spacing:0.03em; margin-bottom:4px; }
+.mode-card p { font-size:11px; color:var(--text2); font-family:var(--font-mono); line-height:1.5; }
 .mode-pill { display:inline-block; background:var(--bg3); border:1px solid var(--border); border-radius:20px; font-size:10px; font-family:var(--font-mono); color:var(--text3); padding:2px 8px; margin-top:8px; }
 .mode-card.active .mode-pill { background:rgba(244,111,41,0.15); border-color:var(--orange); color:var(--orange-dim); }
-@media(max-width:600px){ .mode-selector{grid-template-columns:1fr;} }
 
 /* ── Panel ── */
 .panel { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:24px; margin-top:4px; box-shadow:0 1px 3px rgba(0,0,0,0.07); }
@@ -88,6 +76,7 @@ header { display:flex; align-items:center; gap:16px; padding:24px 0 20px; border
 .stat-label { font-size:10px; font-family:var(--font-mono); color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px; }
 .stat-value { font-size:15px; font-weight:600; font-family:var(--font-mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .stat-value.accent { color:var(--orange); }
+.stat-value.green  { color:var(--green); }
 
 /* ── Progress ── */
 .progress-block { margin-bottom:14px; }
@@ -99,12 +88,14 @@ header { display:flex; align-items:center; gap:16px; padding:24px 0 20px; border
 .progress-pct { font-size:12px; font-family:var(--font-mono); color:var(--text3); min-width:36px; text-align:right; }
 .progress-track { height:6px; background:var(--bg3); border-radius:4px; overflow:hidden; border:1px solid var(--border); }
 .progress-fill { height:100%; border-radius:4px; width:0%; transition:width 0.12s; position:relative; overflow:hidden; }
-.progress-fill.import-fill  { background:linear-gradient(90deg,#1565c0,#42a5f5); }
-.progress-fill.tif-fill     { background:linear-gradient(90deg,#00796b,#4db6ac); }
-.progress-fill.decode-fill  { background:linear-gradient(90deg,#00695c,#26a69a); }
-.progress-fill.sample-fill  { background:linear-gradient(90deg,#6a1b9a,#ab47bc); }
-.progress-fill.colorize-fill{ background:linear-gradient(90deg,var(--orange-dim),var(--orange)); }
-.progress-fill.export-fill  { background:linear-gradient(90deg,#2e7d32,#66bb6a); }
+.progress-fill.import-fill   { background:linear-gradient(90deg,#1565c0,#42a5f5); }
+.progress-fill.tif-fill      { background:linear-gradient(90deg,#00796b,#4db6ac); }
+.progress-fill.decode-fill   { background:linear-gradient(90deg,#00695c,#26a69a); }
+.progress-fill.sample-fill   { background:linear-gradient(90deg,#6a1b9a,#ab47bc); }
+.progress-fill.colorize-fill { background:linear-gradient(90deg,var(--orange-dim),var(--orange)); }
+.progress-fill.surface-fill  { background:linear-gradient(90deg,#4e342e,#8d6e63); }
+.progress-fill.classify-fill { background:linear-gradient(90deg,#2e7d32,#66bb6a); }
+.progress-fill.export-fill   { background:linear-gradient(90deg,#37474f,#78909c); }
 .progress-fill::after { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent); animation:shimmer 1.4s infinite; }
 .progress-fill.done::after { display:none; }
 @keyframes shimmer { to{left:200%;} }
@@ -117,25 +108,40 @@ header { display:flex; align-items:center; gap:16px; padding:24px 0 20px; border
 
 /* ── Height Sliders ── */
 .slider-section { margin-bottom:20px; }
-.slider-row { display:grid; grid-template-columns:56px 1fr 90px; align-items:center; gap:12px; margin-bottom:10px; }
-.slider-row-label { font-size:11px; font-family:var(--font-mono); color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; text-align:right; }
+.slider-row { display:grid; grid-template-columns:64px 1fr 90px; align-items:center; gap:12px; margin-bottom:10px; }
+.slider-row-label { font-size:10px; font-family:var(--font-mono); color:var(--text3); text-transform:uppercase; letter-spacing:0.06em; text-align:right; line-height:1.4; }
 input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:5px; border-radius:3px; outline:none; cursor:pointer; background:var(--bg3); border:1px solid var(--border); }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:var(--orange); border:2px solid #fff; box-shadow:0 1px 4px rgba(244,111,41,0.4); cursor:pointer; transition:transform 0.15s,box-shadow 0.15s; }
-input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.2); box-shadow:0 2px 8px rgba(244,111,41,0.5); }
-input[type=range]::-moz-range-thumb { width:16px; height:16px; border-radius:50%; background:var(--orange); border:2px solid #fff; box-shadow:0 1px 4px rgba(244,111,41,0.4); cursor:pointer; }
-#sliderMin::-webkit-slider-thumb { background:#1565c0; box-shadow:0 1px 4px rgba(21,101,192,0.4); }
-#sliderMin::-webkit-slider-thumb:hover { box-shadow:0 2px 8px rgba(21,101,192,0.5); }
-#sliderMax::-webkit-slider-thumb { background:#c62828; box-shadow:0 1px 4px rgba(198,40,40,0.4); }
-#sliderMax::-webkit-slider-thumb:hover { box-shadow:0 2px 8px rgba(198,40,40,0.5); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--orange); border:2px solid #fff; box-shadow:0 1px 4px rgba(244,111,41,0.4); cursor:pointer; transition:transform 0.15s,box-shadow 0.15s; }
+input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.2); }
+input[type=range]::-moz-range-thumb { width:16px; height:16px; border-radius:50%; background:var(--orange); border:2px solid #fff; cursor:pointer; }
+#sliderMin::-webkit-slider-thumb  { background:#1565c0; }
+#sliderMax::-webkit-slider-thumb  { background:#c62828; }
 .slider-value-input { width:100%; padding:5px 8px; border:1px solid var(--border2); border-radius:4px; font-size:12px; font-family:var(--font-mono); color:var(--text); background:var(--bg2); text-align:right; outline:none; transition:border-color 0.15s; }
 .slider-value-input:focus { border-color:var(--orange); background:#fff; }
 .slider-hint { font-size:10px; font-family:var(--font-mono); color:var(--text3); margin-top:4px; text-align:center; }
 .recolorize-badge { display:inline-flex; align-items:center; gap:6px; background:var(--orange-lt); border:1px solid var(--orange); color:var(--orange-dim); font-size:11px; font-family:var(--font-mono); padding:4px 10px; border-radius:3px; margin-top:8px; animation:fadein 0.2s; }
 
+/* ── Param grid for ground mode ── */
+.param-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+@media(max-width:640px){ .param-grid{grid-template-columns:1fr;} }
+.param-card { background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
+.param-card-label { font-size:10px; font-family:var(--font-mono); color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
+.param-card-desc  { font-size:10px; font-family:var(--font-mono); color:var(--text3); margin-top:6px; line-height:1.4; }
+.param-slider-row { display:flex; align-items:center; gap:10px; }
+.param-slider-row input[type=range] { flex:1; }
+.param-val { font-size:13px; font-family:var(--font-mono); font-weight:600; color:var(--text); min-width:48px; text-align:right; }
+
+/* ── View toggle (layer toggle in ground mode) ── */
+.layer-toggle { display:flex; gap:6px; margin-bottom:16px; align-items:center; }
+.layer-toggle-label { font-size:11px; font-family:var(--font-mono); color:var(--text3); margin-right:4px; }
+.layer-btn { padding:5px 14px; border-radius:20px; border:1px solid var(--border2); font-size:11px; font-family:var(--font-mono); cursor:pointer; background:var(--bg2); color:var(--text2); transition:all 0.15s; }
+.layer-btn.active { background:var(--orange); border-color:var(--orange); color:#fff; }
+.layer-btn:hover:not(.active) { border-color:var(--orange); color:var(--orange); }
+
 /* ── 3D Preview ── */
-.preview-container { position:relative; border:1px solid var(--border); border-radius:6px; overflow:hidden; background:#111418; margin-bottom:20px; height:480px; }
-#threeCanvas { display:block; width:100% !important; height:100% !important; cursor:grab; }
-#threeCanvas:active { cursor:grabbing; }
+.preview-container { position:relative; border:1px solid var(--border); border-radius:6px 6px 0 0; overflow:hidden; background:#111418; margin-bottom:0; height:480px; }
+canvas.three-canvas { display:block; width:100% !important; height:100% !important; cursor:grab; }
+canvas.three-canvas:active { cursor:grabbing; }
 .view-toggle { position:absolute; top:10px; left:10px; display:flex; gap:4px; }
 .view-btn { background:rgba(0,0,0,0.6); color:rgba(255,255,255,0.65); border:1px solid rgba(255,255,255,0.15); border-radius:3px; font-size:10px; font-family:var(--font-mono); padding:4px 9px; cursor:pointer; transition:all 0.15s; backdrop-filter:blur(4px); }
 .view-btn.active { background:var(--orange); color:#fff; border-color:var(--orange); }
@@ -143,7 +149,115 @@ input[type=range]::-moz-range-thumb { width:16px; height:16px; border-radius:50%
 .preview-badges { position:absolute; top:10px; right:10px; display:flex; flex-direction:column; gap:4px; align-items:flex-end; }
 .preview-badge { background:rgba(0,0,0,0.6); color:rgba(255,255,255,0.7); font-size:10px; font-family:var(--font-mono); padding:3px 9px; border-radius:3px; backdrop-filter:blur(4px); }
 .preview-badge.orange { color:#F46F29; }
+.preview-badge.green  { color:#66bb6a; }
+
+/* ── Fullscreen button ── */
+.fullscreen-btn {
+  position:absolute; top:10px; right:10px;
+  background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.15);
+  border-radius:3px; padding:5px 7px; cursor:pointer;
+  backdrop-filter:blur(4px); transition:background 0.15s;
+  display:flex; align-items:center; justify-content:center;
+  color:rgba(255,255,255,0.7);
+}
+.fullscreen-btn:hover { background:rgba(0,0,0,0.85); color:#fff; }
+.fullscreen-btn svg { width:14px; height:14px; display:block; }
+
+/* ── Fullscreen mode overrides ── */
+.preview-container:fullscreen,
+.preview-container:-webkit-full-screen,
+.preview-container:-moz-full-screen,
+.preview-container:-ms-fullscreen {
+  border-radius:0 !important;
+  height:100vh !important;
+  width:100vw !important;
+  margin:0 !important;
+}
+.preview-container:fullscreen canvas,
+.preview-container:-webkit-full-screen canvas,
+.preview-container:-moz-full-screen canvas {
+  width:100% !important;
+  height:100% !important;
+}
 .controls-hint { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.6); color:rgba(255,255,255,0.6); font-size:10px; font-family:var(--font-mono); padding:5px 14px; border-radius:20px; pointer-events:none; white-space:nowrap; backdrop-filter:blur(4px); }
+
+/* ── Below-preview controls strip ── */
+.preview-below-controls {
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:9px 14px;
+  background:var(--bg2); border:1px solid var(--border);
+  border-top:none; border-radius:0 0 6px 6px;
+}
+.preview-below-label {
+  font-size:11px; font-family:var(--font-mono); color:var(--text3);
+  white-space:nowrap; user-select:none; min-width:60px;
+}
+.preview-below-slider {
+  -webkit-appearance:none; appearance:none;
+  flex:1; max-width:140px; height:5px; border-radius:3px; outline:none; cursor:pointer;
+  background:var(--bg3); border:1px solid var(--border);
+}
+.preview-below-slider::-webkit-slider-thumb {
+  -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+  background:var(--orange); border:2px solid #fff;
+  box-shadow:0 1px 4px rgba(244,111,41,0.35); cursor:pointer;
+}
+.preview-below-slider::-moz-range-thumb {
+  width:14px; height:14px; border-radius:50%;
+  background:var(--orange); border:2px solid #fff; cursor:pointer;
+}
+.preview-below-divider { width:1px; height:20px; background:var(--border2); flex-shrink:0; }
+/* View buttons inside the strip */
+.below-view-btns { display:flex; gap:4px; }
+.below-view-btn {
+  padding:4px 10px; border-radius:3px; border:1px solid var(--border2);
+  font-size:11px; font-family:var(--font-mono); cursor:pointer;
+  background:var(--bg3); color:var(--text2); transition:all 0.15s; white-space:nowrap;
+}
+.below-view-btn.active { background:var(--orange); border-color:var(--orange); color:#fff; }
+.below-view-btn:hover:not(.active) { border-color:var(--orange); color:var(--orange); background:var(--orange-lt); }
+/* Toggle switch (light theme) */
+.toggle-wrap { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+.toggle-track {
+  width:32px; height:18px; border-radius:9px; background:var(--border2);
+  position:relative; transition:background 0.2s; flex-shrink:0;
+  border:1px solid var(--border2);
+}
+.toggle-track.on { background:var(--orange); border-color:var(--orange-dim); }
+.toggle-thumb {
+  position:absolute; top:2px; left:2px; width:12px; height:12px;
+  border-radius:50%; background:#fff; transition:transform 0.2s;
+  box-shadow:0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-track.on .toggle-thumb { transform:translateX(14px); }
+.toggle-label { font-size:12px; font-family:var(--font-mono); color:var(--text2); }
+/* Navigation tooltip row */
+.nav-tooltip {
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  padding:7px 14px 8px;
+  background:var(--bg2); border:1px solid var(--border);
+  border-top:1px solid var(--border); border-radius:0 0 6px 6px;
+  margin-bottom:20px;
+}
+.nav-tooltip-item {
+  display:flex; align-items:center; gap:6px;
+  font-size:11px; font-family:var(--font-mono); color:var(--text3);
+}
+.nav-key {
+  background:var(--bg3); border:1px solid var(--border2); border-radius:3px;
+  padding:1px 7px; font-size:10px; color:var(--text2); font-weight:600;
+  box-shadow:0 1px 0 var(--border2); white-space:nowrap;
+}
+/* Remove bottom border-radius from below-controls when tooltip follows */
+.preview-below-controls.has-tooltip {
+  border-radius:0;
+  border-bottom: none;
+}
+
+/* ── Legend ground ── */
+.ground-legend { display:flex; gap:14px; align-items:center; font-size:11px; font-family:var(--font-mono); color:var(--text2); margin-bottom:16px; flex-wrap:wrap; }
+.ground-legend-item { display:flex; align-items:center; gap:6px; }
+.legend-swatch { width:14px; height:14px; border-radius:3px; border:1px solid var(--border); flex-shrink:0; }
 
 /* ── Status & Buttons ── */
 .status-msg { padding:10px 14px; border-radius:5px; font-size:12px; font-family:var(--font-mono); margin-top:14px; display:flex; align-items:center; gap:9px; animation:fadein 0.25s; }
@@ -165,11 +279,15 @@ input[type=range]::-moz-range-thumb { width:16px; height:16px; border-radius:50%
 .btn-teal { background:var(--teal); color:#fff; box-shadow:0 2px 8px rgba(0,121,107,0.3); }
 .btn-teal:hover:not(:disabled) { background:#00695c; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,121,107,0.4); }
 .btn-teal:disabled { opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none; }
+.btn-green { background:var(--green); color:#fff; box-shadow:0 2px 8px rgba(46,125,50,0.3); }
+.btn-green:hover:not(:disabled) { background:#1b5e20; transform:translateY(-1px); box-shadow:0 4px 14px rgba(46,125,50,0.4); }
+.btn-green:disabled { opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none; }
 
-/* ── Info box ── */
 .info-box { background:var(--blue-lt); border:1px solid #90caf9; border-radius:6px; padding:12px 16px; font-size:12px; font-family:var(--font-mono); color:var(--blue); margin-bottom:18px; line-height:1.6; }
 .info-box strong { font-weight:600; }
+.warn-box { background:#fff3e0; border:1px solid #ffcc02; border-radius:6px; padding:12px 16px; font-size:12px; font-family:var(--font-mono); color:#e65100; margin-bottom:18px; line-height:1.6; }
 
+.run-btn-wrap { margin-bottom:20px; }
 .hidden { display:none !important; }
 footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); font-size:11px; font-family:var(--font-mono); color:var(--text3); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
 </style>
@@ -185,65 +303,43 @@ footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); 
       <circle cx="10" cy="7"  r="1.4" fill="white"/>
       <circle cx="6"  cy="13" r="1.4" fill="white"/>
       <circle cx="14" cy="13" r="1.4" fill="white"/>
-      <line x1="10" y1="7" x2="6"  y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
-      <line x1="10" y1="7" x2="14" y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
+      <line x1="10" y1="7"  x2="6"  y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
+      <line x1="10" y1="7"  x2="14" y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
       <line x1="6"  y1="13" x2="14" y2="13" stroke="white" stroke-width="0.8" opacity="0.6"/>
     </svg>
   </div>
   <div class="header-text">
-    <h1>Wingtra<span>LIDAR</span> Colorizer</h1>
-    <p>// point cloud colorization tool · .las format</p>
+    <h1>Wingtra<span>LIDAR</span> Colorizer & Classifier <span style="font-weight:400;font-size:16px;color:var(--text3);letter-spacing:0.04em;">Beta</span></h1>
   </div>
-  <div class="header-badge">v2.0.0</div>
 </header>
 
 <!-- ── Mode Selector ── -->
 <div class="mode-selector">
   <div class="mode-card active" id="modeCardHeight" onclick="selectMode('height')">
-    <div class="mode-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 20h18M5 20V10l7-7 7 7v10"/>
-        <rect x="9" y="14" width="6" height="6"/>
-      </svg>
-    </div>
-    <h3>Height Colorize</h3>
-    <p>Colorize by Z value using a blue→green→red gradient. Includes manual min/max height range control.</p>
-    <span class="mode-pill">.las → colorized .las</span>
+    <div class="mode-icon" style="font-size:24px; background:var(--bg3);">🏔️</div>
+    <h3>Height Colorizer</h3>
+    <p>Colorize by Z value using a gradient. Manual min/max range control.</p>
   </div>
   <div class="mode-card" id="modeCardOrtho" onclick="selectMode('ortho')">
-    <div class="mode-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <circle cx="8.5" cy="8.5" r="1.5"/>
-        <path d="M21 15l-5-5L5 21"/>
-      </svg>
-    </div>
-    <h3>Orthomosaic Colorize</h3>
-    <p>Project true RGB colors from a GeoTIFF orthomosaic onto each point using its XY coordinates.</p>
-    <span class="mode-pill">.las + .tif → colorized .las</span>
+    <div class="mode-icon" style="font-size:24px; background:var(--bg3);">📷</div>
+    <h3>Ortho Colorizer</h3>
+    <p>Project true RGB from a GeoTIFF orthomosaic onto each point by XY.</p>
+  </div>
+  <div class="mode-card" id="modeCardGround" onclick="selectMode('ground')">
+    <div class="mode-icon" style="font-size:24px; background:var(--bg3);">🗺️</div>
+    <h3>Ground Classifier</h3>
+    <p>Detect ground points. Export ground-only cloud with height coloring.</p>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════
-     MODE A: HEIGHT COLORIZE
-═════════════════════════════════════════ -->
+<!-- ═══════════════════ MODE A: HEIGHT ═══════════════════ -->
 <div id="heightWorkflow">
-
   <div class="drop-zone" id="dropZoneHeight">
-    <div class="drop-icon">
-      <svg viewBox="0 0 52 52" fill="none">
-        <rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/>
-        <path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="12" cy="14" r="2.5" fill="#F46F29" opacity="0.35"/>
-        <circle cx="40" cy="40" r="2.5" fill="#F46F29" opacity="0.35"/>
-      </svg>
-    </div>
+    <div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/><path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="14" r="2.5" fill="#F46F29" opacity="0.35"/><circle cx="40" cy="40" r="2.5" fill="#F46F29" opacity="0.35"/></svg></div>
     <div class="drop-title">Drop your <span>.las</span> file here</div>
     <div class="drop-sub">or click to browse &nbsp;·&nbsp; LAS 1.0–1.4 &nbsp;·&nbsp; Point formats 0–10</div>
     <input type="file" id="fileInputHeight" accept=".las">
   </div>
-
   <div class="panel hidden" id="heightPanel">
     <div class="section-title">File Info</div>
     <div class="stats-grid">
@@ -252,71 +348,58 @@ footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); 
       <div class="stat-card"><div class="stat-label">Min Z</div><div class="stat-value" id="hStatMinZ">—</div></div>
       <div class="stat-card"><div class="stat-label">Max Z</div><div class="stat-value" id="hStatMaxZ">—</div></div>
       <div class="stat-card"><div class="stat-label">Z Range</div><div class="stat-value" id="hStatZRange">—</div></div>
-      <div class="stat-card"><div class="stat-label">LAS Version</div><div class="stat-value" id="hStatVer">—</div></div>
+      <div class="stat-card"><div class="stat-label">LAS Ver.</div><div class="stat-value" id="hStatVer">—</div></div>
       <div class="stat-card"><div class="stat-label">Pt Format</div><div class="stat-value" id="hStatFmt">—</div></div>
       <div class="stat-card"><div class="stat-label">File Size</div><div class="stat-value" id="hStatSize">—</div></div>
     </div>
-
     <div class="section-title">Progress</div>
-    <div class="progress-block">
-      <div class="progress-header">
-        <div class="progress-name"><span>Import</span><span class="phase-tag" id="hImportTag">Waiting</span></div>
-        <div class="progress-pct" id="hImportPct">0%</div>
-      </div>
-      <div class="progress-track"><div class="progress-fill import-fill" id="hImportBar"></div></div>
-    </div>
-    <div class="progress-block">
-      <div class="progress-header">
-        <div class="progress-name"><span>Colorize</span><span class="phase-tag" id="hColorizeTag">Waiting</span></div>
-        <div class="progress-pct" id="hColorizePct">0%</div>
-      </div>
-      <div class="progress-track"><div class="progress-fill colorize-fill" id="hColorizeBar"></div></div>
-    </div>
-
+    <div class="progress-block"><div class="progress-header"><div class="progress-name"><span>Import</span><span class="phase-tag" id="hImportTag">Waiting</span></div><div class="progress-pct" id="hImportPct">0%</div></div><div class="progress-track"><div class="progress-fill import-fill" id="hImportBar"></div></div></div>
+    <div class="progress-block"><div class="progress-header"><div class="progress-name"><span>Colorize</span><span class="phase-tag" id="hColorizeTag">Waiting</span></div><div class="progress-pct" id="hColorizePct">0%</div></div><div class="progress-track"><div class="progress-fill colorize-fill" id="hColorizeBar"></div></div></div>
     <div id="hStatusBox"></div>
-
     <div class="section-title hidden" id="hLegendTitle" style="margin-top:20px">Height Color Scale</div>
     <div class="legend-row hidden" id="hColorLegend">
       <div class="legend-label" id="hLegendMin">—</div>
-      <div style="flex:1">
-        <div class="legend-bar"></div>
-        <div class="legend-ticks"><span>Low</span><span>25%</span><span>Mid</span><span>75%</span><span>High</span></div>
-      </div>
+      <div style="flex:1"><div class="legend-bar"></div><div class="legend-ticks"><span>Low</span><span>25%</span><span>Mid</span><span>75%</span><span>High</span></div></div>
       <div class="legend-label" id="hLegendMax">—</div>
     </div>
-
     <div class="slider-section hidden" id="hSliderSection">
       <div class="section-title" style="margin-bottom:14px">Height Color Range</div>
-      <div class="slider-row">
-        <div class="slider-row-label" style="font-size:10px">Min Z<br><span style="color:#1565c0">▬</span></div>
-        <input type="range" id="sliderMin" min="0" max="100" step="any" value="0">
-        <input type="number" class="slider-value-input" id="inputMin" step="0.01">
-      </div>
-      <div class="slider-row">
-        <div class="slider-row-label" style="font-size:10px">Max Z<br><span style="color:#c62828">▬</span></div>
-        <input type="range" id="sliderMax" min="0" max="100" step="any" value="100">
-        <input type="number" class="slider-value-input" id="inputMax" step="0.01">
-      </div>
+      <div class="slider-row"><div class="slider-row-label">Min Z<br><span style="color:#1565c0">▬</span></div><input type="range" id="sliderMin" min="0" max="100" step="any" value="0"><input type="number" class="slider-value-input" id="inputMin" step="0.01"></div>
+      <div class="slider-row"><div class="slider-row-label">Max Z<br><span style="color:#c62828">▬</span></div><input type="range" id="sliderMax" min="0" max="100" step="any" value="100"><input type="number" class="slider-value-input" id="inputMax" step="0.01"></div>
       <div class="slider-hint">Points below Min Z → <span style="color:#1a237e">■</span> deep blue &nbsp;·&nbsp; Points above Max Z → <span style="color:#c62828">■</span> deep red</div>
       <div id="hRecolorizeBadge" class="recolorize-badge hidden"><div class="dot pulse" style="background:var(--orange)"></div>Re-colorizing…</div>
     </div>
-
     <div class="section-title hidden" id="hPreviewTitle">3D Point Cloud Preview</div>
     <div class="preview-container hidden" id="hPreviewWrap">
-      <canvas id="threeCanvas"></canvas>
-      <div class="view-toggle">
-        <button class="view-btn active" id="btn3d"    onclick="setViewMode('3d')">3D</button>
-        <button class="view-btn"        id="btnTop"   onclick="setViewMode('top')">Top</button>
-        <button class="view-btn"        id="btnFront" onclick="setViewMode('front')">Front</button>
-        <button class="view-btn"        id="btnSide"  onclick="setViewMode('side')">Side</button>
-      </div>
-      <div class="preview-badges">
-        <div class="preview-badge orange" id="hPreviewPts">—</div>
-        <div class="preview-badge">Drag · Scroll · Shift+Drag</div>
-      </div>
-      <div class="controls-hint">🖱 Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Shift+Drag to pan</div>
+      <canvas id="threeCanvasHeight" class="three-canvas"></canvas>
+      <button class="fullscreen-btn" onclick="toggleFullscreen('hPreviewWrap', this)" title="Toggle fullscreen">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" class="fs-expand"/>
+          <path d="M5 1v4H1M13 5H9V1M9 13v-4h4M1 9h4v4" class="fs-compress" style="display:none"/>
+        </svg>
+      </button>
     </div>
-
+    <div class="preview-below-controls has-tooltip hidden" id="hPreviewBelowControls">
+      <div class="below-view-btns">
+        <button class="below-view-btn active" id="hBtn3d"    onclick="setVM('h','3d')">3D</button>
+        <button class="below-view-btn"        id="hBtnTop"   onclick="setVM('h','top')">Top</button>
+        <button class="below-view-btn"        id="hBtnFront" onclick="setVM('h','front')">Front</button>
+        <button class="below-view-btn"        id="hBtnSide"  onclick="setVM('h','side')">Side</button>
+      </div>
+      <div class="preview-below-divider"></div>
+      <span class="preview-below-label">Point Size</span>
+      <input type="range" class="preview-below-slider" id="hPtSizeSlider" min="0.5" max="5" step="0.1" value="1" oninput="setPointSize('h',this.value)">
+      <div class="preview-below-divider"></div>
+      <div class="toggle-wrap" onclick="toggleAutoRotate('h')">
+        <div class="toggle-track on" id="hAutoRotateTrack"><div class="toggle-thumb"></div></div>
+        <span class="toggle-label">Auto Rotate</span>
+      </div>
+    </div>
+    <div class="nav-tooltip hidden" id="hNavTooltip">
+      <div class="nav-tooltip-item"><span class="nav-key">Drag</span><span>Rotate</span></div>
+      <div class="nav-tooltip-item"><span class="nav-key">Scroll</span><span>Zoom</span></div>
+      <div class="nav-tooltip-item"><span class="nav-key">Shift</span><span>+</span><span class="nav-key">Drag</span><span>Pan</span></div>
+    </div>
     <div class="btn-row">
       <button class="btn btn-primary hidden" id="hDownloadBtn" onclick="startDownload('height')">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v8M5 7l2.5 2.5L10 7M2 12h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -327,121 +410,71 @@ footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); 
         Load New File
       </button>
     </div>
-    <div class="progress-block hidden" id="hExportBlock" style="margin-top:12px;margin-bottom:0">
-      <div class="progress-header">
-        <div class="progress-name"><span>Export</span><span class="phase-tag" id="hExportTag">Waiting</span></div>
-        <div class="progress-pct" id="hExportPct">0%</div>
-      </div>
-      <div class="progress-track"><div class="progress-fill export-fill" id="hExportBar"></div></div>
-    </div>
+    <div class="progress-block hidden" id="hExportBlock" style="margin-top:12px;margin-bottom:0"><div class="progress-header"><div class="progress-name"><span>Export</span><span class="phase-tag" id="hExportTag">Waiting</span></div><div class="progress-pct" id="hExportPct">0%</div></div><div class="progress-track"><div class="progress-fill export-fill" id="hExportBar"></div></div></div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════
-     MODE B: ORTHO COLORIZE
-═════════════════════════════════════════ -->
+<!-- ═══════════════════ MODE B: ORTHO ═══════════════════ -->
 <div id="orthoWorkflow" class="hidden">
-
-  <div class="info-box">
-    <strong>How it works:</strong> Upload your .las point cloud and a GeoTIFF orthomosaic. Each point's XY coordinates are used to sample the corresponding RGB pixel from the TIF. Both files must be in the <strong>same coordinate reference system (CRS)</strong>.
-  </div>
-
   <div class="drop-two">
     <div>
       <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">① Point Cloud</div>
-      <div class="drop-zone" id="dropZoneOrthoLas">
-        <div class="drop-icon">
-          <svg viewBox="0 0 52 52" fill="none">
-            <rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/>
-            <path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="drop-title"><span>.las</span> file</div>
-        <div class="drop-sub">Point cloud input</div>
-        <input type="file" id="fileInputOrthoLas" accept=".las">
-      </div>
+      <div class="drop-zone" id="dropZoneOrthoLas"><div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/><path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/></svg></div><div class="drop-title"><span>.las</span> file</div><div class="drop-sub">Point cloud input</div><input type="file" id="fileInputOrthoLas" accept=".las"></div>
     </div>
     <div>
       <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">② Orthomosaic</div>
-      <div class="drop-zone" id="dropZoneOrthoTif">
-        <div class="drop-icon">
-          <svg viewBox="0 0 52 52" fill="none">
-            <rect x="4" y="4" width="44" height="44" rx="4" stroke="#00796b" stroke-width="2"/>
-            <rect x="10" y="10" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/>
-            <rect x="28" y="10" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/>
-            <rect x="10" y="28" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/>
-            <rect x="28" y="28" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/>
-          </svg>
-        </div>
-        <div class="drop-title"><span style="color:var(--teal)">.tif</span> file</div>
-        <div class="drop-sub">GeoTIFF orthomosaic (RGB)</div>
-        <input type="file" id="fileInputOrthoTif" accept=".tif,.tiff">
-      </div>
+      <div class="drop-zone" id="dropZoneOrthoTif"><div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="4" width="44" height="44" rx="4" stroke="#00796b" stroke-width="2"/><rect x="10" y="10" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/><rect x="28" y="10" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/><rect x="10" y="28" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/><rect x="28" y="28" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/></svg></div><div class="drop-title"><span style="color:var(--teal)">.tif</span> file</div><div class="drop-sub">GeoTIFF orthomosaic (RGB)</div><input type="file" id="fileInputOrthoTif" accept=".tif,.tiff"></div>
     </div>
   </div>
-
   <div class="panel hidden" id="orthoPanel">
     <div class="section-title">File Info</div>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">LAS File</div><div class="stat-value" id="oStatLasFile" style="font-size:12px">—</div></div>
       <div class="stat-card"><div class="stat-label">Points</div><div class="stat-value accent" id="oStatPts">—</div></div>
-      <div class="stat-card"><div class="stat-label">LAS Version</div><div class="stat-value" id="oStatVer">—</div></div>
+      <div class="stat-card"><div class="stat-label">LAS Ver.</div><div class="stat-value" id="oStatVer">—</div></div>
       <div class="stat-card"><div class="stat-label">LAS Size</div><div class="stat-value" id="oStatLasSize">—</div></div>
       <div class="stat-card"><div class="stat-label">TIF File</div><div class="stat-value" id="oStatTifFile" style="font-size:12px">—</div></div>
       <div class="stat-card"><div class="stat-label">TIF Size</div><div class="stat-value" id="oStatTifSize">—</div></div>
       <div class="stat-card"><div class="stat-label">Image Res.</div><div class="stat-value" id="oStatTifRes">—</div></div>
       <div class="stat-card"><div class="stat-label">Bands</div><div class="stat-value" id="oStatTifBands">—</div></div>
     </div>
-
     <div class="section-title">Progress</div>
-    <div class="progress-block">
-      <div class="progress-header">
-        <div class="progress-name"><span>Import LAS</span><span class="phase-tag" id="oLasTag">Waiting</span></div>
-        <div class="progress-pct" id="oLasPct">0%</div>
-      </div>
-      <div class="progress-track"><div class="progress-fill import-fill" id="oLasBar"></div></div>
-    </div>
-    <div class="progress-block">
-      <div class="progress-header">
-        <div class="progress-name"><span>Import TIF</span><span class="phase-tag" id="oTifTag">Waiting</span></div>
-        <div class="progress-pct" id="oTifPct">0%</div>
-      </div>
-      <div class="progress-track"><div class="progress-fill tif-fill" id="oTifBar"></div></div>
-    </div>
-    <div class="progress-block">
-      <div class="progress-header">
-        <div class="progress-name"><span>Decode TIF</span><span class="phase-tag" id="oDecodeTag">Waiting</span></div>
-        <div class="progress-pct" id="oDecodePct">0%</div>
-      </div>
-      <div class="progress-track"><div class="progress-fill decode-fill" id="oDecodeBar"></div></div>
-    </div>
-    <div class="progress-block">
-      <div class="progress-header">
-        <div class="progress-name"><span>Sample Colors</span><span class="phase-tag" id="oSampleTag">Waiting</span></div>
-        <div class="progress-pct" id="oSamplePct">0%</div>
-      </div>
-      <div class="progress-track"><div class="progress-fill sample-fill" id="oSampleBar"></div></div>
-    </div>
-
+    <div class="progress-block"><div class="progress-header"><div class="progress-name"><span>Import LAS</span><span class="phase-tag" id="oLasTag">Waiting</span></div><div class="progress-pct" id="oLasPct">0%</div></div><div class="progress-track"><div class="progress-fill import-fill" id="oLasBar"></div></div></div>
+    <div class="progress-block"><div class="progress-header"><div class="progress-name"><span>Import TIF</span><span class="phase-tag" id="oTifTag">Waiting</span></div><div class="progress-pct" id="oTifPct">0%</div></div><div class="progress-track"><div class="progress-fill tif-fill" id="oTifBar"></div></div></div>
+    <div class="progress-block"><div class="progress-header"><div class="progress-name"><span>Decode TIF</span><span class="phase-tag" id="oDecodeTag">Waiting</span></div><div class="progress-pct" id="oDecodePct">0%</div></div><div class="progress-track"><div class="progress-fill decode-fill" id="oDecodeBar"></div></div></div>
+    <div class="progress-block"><div class="progress-header"><div class="progress-name"><span>Sample Colors</span><span class="phase-tag" id="oSampleTag">Waiting</span></div><div class="progress-pct" id="oSamplePct">0%</div></div><div class="progress-track"><div class="progress-fill sample-fill" id="oSampleBar"></div></div></div>
     <div id="oStatusBox"></div>
-
     <div class="section-title hidden" id="oPreviewTitle" style="margin-top:20px">3D Point Cloud Preview</div>
     <div class="preview-container hidden" id="oPreviewWrap">
-      <canvas id="threeCanvasOrtho"></canvas>
-      <div class="view-toggle">
-        <button class="view-btn active" id="oBtn3d"    onclick="setViewModeOrtho('3d')">3D</button>
-        <button class="view-btn"        id="oBtnTop"   onclick="setViewModeOrtho('top')">Top</button>
-        <button class="view-btn"        id="oBtnFront" onclick="setViewModeOrtho('front')">Front</button>
-        <button class="view-btn"        id="oBtnSide"  onclick="setViewModeOrtho('side')">Side</button>
-      </div>
-      <div class="preview-badges">
-        <div class="preview-badge orange" id="oPreviewPts">—</div>
-        <div class="preview-badge">Drag · Scroll · Shift+Drag</div>
-      </div>
-      <div class="controls-hint">🖱 Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Shift+Drag to pan</div>
+      <canvas id="threeCanvasOrtho" class="three-canvas"></canvas>
+      <button class="fullscreen-btn" onclick="toggleFullscreen('oPreviewWrap', this)" title="Toggle fullscreen">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" class="fs-expand"/>
+          <path d="M5 1v4H1M13 5H9V1M9 13v-4h4M1 9h4v4" class="fs-compress" style="display:none"/>
+        </svg>
+      </button>
     </div>
-
+    <div class="preview-below-controls has-tooltip hidden" id="oPreviewBelowControls">
+      <div class="below-view-btns">
+        <button class="below-view-btn active" id="oBtn3d"    onclick="setVM('o','3d')">3D</button>
+        <button class="below-view-btn"        id="oBtnTop"   onclick="setVM('o','top')">Top</button>
+        <button class="below-view-btn"        id="oBtnFront" onclick="setVM('o','front')">Front</button>
+        <button class="below-view-btn"        id="oBtnSide"  onclick="setVM('o','side')">Side</button>
+      </div>
+      <div class="preview-below-divider"></div>
+      <span class="preview-below-label">Point Size</span>
+      <input type="range" class="preview-below-slider" id="oPtSizeSlider" min="0.5" max="5" step="0.1" value="1" oninput="setPointSize('o',this.value)">
+      <div class="preview-below-divider"></div>
+      <div class="toggle-wrap" onclick="toggleAutoRotate('o')">
+        <div class="toggle-track on" id="oAutoRotateTrack"><div class="toggle-thumb"></div></div>
+        <span class="toggle-label">Auto Rotate</span>
+      </div>
+    </div>
+    <div class="nav-tooltip hidden" id="oNavTooltip">
+      <div class="nav-tooltip-item"><span class="nav-key">Drag</span><span>Rotate</span></div>
+      <div class="nav-tooltip-item"><span class="nav-key">Scroll</span><span>Zoom</span></div>
+      <div class="nav-tooltip-item"><span class="nav-key">Shift</span><span>+</span><span class="nav-key">Drag</span><span>Pan</span></div>
+    </div>
     <div class="btn-row">
       <button class="btn btn-teal hidden" id="oDownloadBtn" onclick="startDownload('ortho')">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v8M5 7l2.5 2.5L10 7M2 12h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -452,13 +485,176 @@ footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); 
         Load New Files
       </button>
     </div>
-    <div class="progress-block hidden" id="oExportBlock" style="margin-top:12px;margin-bottom:0">
-      <div class="progress-header">
-        <div class="progress-name"><span>Export</span><span class="phase-tag" id="oExportTag">Waiting</span></div>
-        <div class="progress-pct" id="oExportPct">0%</div>
-      </div>
-      <div class="progress-track"><div class="progress-fill export-fill" id="oExportBar"></div></div>
+    <div class="progress-block hidden" id="oExportBlock" style="margin-top:12px;margin-bottom:0"><div class="progress-header"><div class="progress-name"><span>Export</span><span class="phase-tag" id="oExportTag">Waiting</span></div><div class="progress-pct" id="oExportPct">0%</div></div><div class="progress-track"><div class="progress-fill export-fill" id="oExportBar"></div></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODE C: GROUND CLASSIFY ═══════════════════ -->
+<div id="groundWorkflow" class="hidden">
+  <div class="drop-zone" id="dropZoneGround">
+    <div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="6" width="44" height="40" rx="4" stroke="#2e7d32" stroke-width="2"/><path d="M4 36 Q14 24 26 28 Q38 32 48 20" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="14" cy="30" r="2" fill="#2e7d32" opacity="0.5"/><circle cx="26" cy="28" r="2" fill="#2e7d32" opacity="0.7"/><circle cx="38" cy="24" r="2" fill="#2e7d32" opacity="0.5"/><circle cx="20" cy="18" r="2" fill="#2e7d32" opacity="0.3"/><circle cx="32" cy="14" r="2" fill="#2e7d32" opacity="0.3"/></svg></div>
+    <div class="drop-title">Drop your <span style="color:var(--green)">.las</span> file here</div>
+    <div class="drop-sub">or click to browse &nbsp;·&nbsp; LAS 1.0–1.4 &nbsp;·&nbsp; Point formats 0–10</div>
+    <input type="file" id="fileInputGround" accept=".las">
+  </div>
+
+  <div class="panel hidden" id="groundPanel">
+    <div class="section-title">File Info</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Filename</div><div class="stat-value" id="gStatFile" style="font-size:12px">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total Points</div><div class="stat-value accent" id="gStatPts">—</div></div>
+      <div class="stat-card"><div class="stat-label">Ground Points</div><div class="stat-value green" id="gStatGndPts">—</div></div>
+      <div class="stat-card"><div class="stat-label">Ground %</div><div class="stat-value green" id="gStatGndPct">—</div></div>
+      <div class="stat-card"><div class="stat-label">Min Z</div><div class="stat-value" id="gStatMinZ">—</div></div>
+      <div class="stat-card"><div class="stat-label">Max Z</div><div class="stat-value" id="gStatMaxZ">—</div></div>
+      <div class="stat-card"><div class="stat-label">LAS Ver.</div><div class="stat-value" id="gStatVer">—</div></div>
+      <div class="stat-card"><div class="stat-label">File Size</div><div class="stat-value" id="gStatSize">—</div></div>
     </div>
+
+    <!-- Algorithm Parameters -->
+    <div class="section-title" id="gParamTitle">Classification Settings</div>
+
+    <div class="info-box" style="margin-bottom:16px">
+      <strong>New to ground classification?</strong> The defaults work well for most drone LiDAR surveys — just hit Run. If results aren't quite right, use the tips below each slider to adjust.
+    </div>
+
+    <div class="param-grid" id="gParamGrid">
+      <div class="param-card">
+        <div class="param-card-label">Grid Cell Size</div>
+        <div class="param-slider-row">
+          <input type="range" id="gParamCellSize" min="0.5" max="10" step="0.5" value="2">
+          <span class="param-val" id="gParamCellSizeVal">2.0 m</span>
+        </div>
+        <div class="param-card-desc">
+          Size of each ground surface tile.<br>
+          ↓ Smaller → more terrain detail, slower<br>
+          ↑ Larger → smoother result, faster<br>
+          <em>Try 1–3 m for hilly terrain, 3–6 m for flat fields.</em>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="param-card-label">Max Ground Thickness</div>
+        <div class="param-slider-row">
+          <input type="range" id="gParamMaxH" min="0.05" max="2.0" step="0.05" value="0.3">
+          <span class="param-val" id="gParamMaxHVal">0.30 m</span>
+        </div>
+        <div class="param-card-desc">
+          How far above bare earth a point can be and still be ground.<br>
+          ↓ Lower → only bare soil (strict)<br>
+          ↑ Higher → includes low grass &amp; gravel<br>
+          <em>Too many buildings classified? Lower this value.</em>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="param-card-label">Surface Smoothness</div>
+        <div class="param-slider-row">
+          <input type="range" id="gParamSmooth" min="1" max="8" step="1" value="3">
+          <span class="param-val" id="gParamSmoothVal">3</span>
+        </div>
+        <div class="param-card-desc">
+          How smooth the computed ground surface looks.<br>
+          ↓ Low → follows rough terrain closely<br>
+          ↑ High → gentle, rolling surface<br>
+          <em>Ground has holes or spikes? Increase this.</em>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="param-card-label">Accuracy Passes</div>
+        <div class="param-slider-row">
+          <input type="range" id="gParamIter" min="1" max="4" step="1" value="2">
+          <span class="param-val" id="gParamIterVal">2</span>
+        </div>
+        <div class="param-card-desc">
+          How many times the algorithm self-corrects.<br>
+          ↓ 1 pass → fast, good for most cases<br>
+          ↑ 3–4 passes → more accurate, slower<br>
+          <em>Large files? Start with 1–2 passes.</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="run-btn-wrap" id="gRunBtnWrap">
+      <button class="btn btn-primary" id="gRunBtn" onclick="runGroundClassification()">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M5 3l7 4.5L5 12V3z" fill="currentColor"/></svg>
+        Run Ground Classification
+      </button>
+    </div>
+
+    <div class="section-title">Progress</div>
+    <div class="progress-block"><div class="progress-header"><div class="progress-name"><span>Import</span><span class="phase-tag" id="gImportTag">Waiting</span></div><div class="progress-pct" id="gImportPct">0%</div></div><div class="progress-track"><div class="progress-fill import-fill" id="gImportBar"></div></div></div>
+    <div class="progress-block"><div class="progress-header"><div class="progress-name"><span>Build Surface</span><span class="phase-tag" id="gSurfaceTag">Waiting</span></div><div class="progress-pct" id="gSurfacePct">0%</div></div><div class="progress-track"><div class="progress-fill surface-fill" id="gSurfaceBar"></div></div></div>
+    <div class="progress-block"><div class="progress-header"><div class="progress-name"><span>Classify Points</span><span class="phase-tag" id="gClassifyTag">Waiting</span></div><div class="progress-pct" id="gClassifyPct">0%</div></div><div class="progress-track"><div class="progress-fill classify-fill" id="gClassifyBar"></div></div></div>
+
+    <div id="gStatusBox"></div>
+
+    <!-- Color legend -->
+    <div class="section-title hidden" id="gLegendTitle" style="margin-top:20px">Height Color Scale (Ground Points)</div>
+    <div class="legend-row hidden" id="gColorLegend">
+      <div class="legend-label" id="gLegendMin">—</div>
+      <div style="flex:1"><div class="legend-bar"></div><div class="legend-ticks"><span>Low</span><span>25%</span><span>Mid</span><span>75%</span><span>High</span></div></div>
+      <div class="legend-label" id="gLegendMax">—</div>
+    </div>
+
+    <!-- 3D Preview -->
+    <div class="section-title hidden" id="gPreviewTitle">3D Point Cloud Preview</div>
+    <div class="hidden" id="gPreviewControls">
+      <div class="ground-legend">
+        <span class="layer-toggle-label">Legend:</span>
+        <div class="ground-legend-item"><div class="legend-swatch" style="background:linear-gradient(90deg,#1a237e,#2e7d32,#c62828)"></div><span>Ground (height colored)</span></div>
+        <div class="ground-legend-item"><div class="legend-swatch" style="background:#888"></div><span>Non-ground (gray)</span></div>
+      </div>
+      <div class="layer-toggle">
+        <span class="layer-toggle-label">Show:</span>
+        <button class="layer-btn active" id="gBtnAll"    onclick="gSetLayer('all')">All Points</button>
+        <button class="layer-btn"        id="gBtnGround" onclick="gSetLayer('ground')">Ground Only</button>
+      </div>
+    </div>
+    <div class="preview-container hidden" id="gPreviewWrap">
+      <canvas id="threeCanvasGround" class="three-canvas"></canvas>
+      <button class="fullscreen-btn" onclick="toggleFullscreen('gPreviewWrap', this)" title="Toggle fullscreen">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" class="fs-expand"/>
+          <path d="M5 1v4H1M13 5H9V1M9 13v-4h4M1 9h4v4" class="fs-compress" style="display:none"/>
+        </svg>
+      </button>
+    </div>
+    <div class="preview-below-controls has-tooltip hidden" id="gPreviewBelowControls">
+      <div class="below-view-btns">
+        <button class="below-view-btn active" id="gBtn3d"    onclick="setVM('g','3d')">3D</button>
+        <button class="below-view-btn"        id="gBtnTop"   onclick="setVM('g','top')">Top</button>
+        <button class="below-view-btn"        id="gBtnFront" onclick="setVM('g','front')">Front</button>
+        <button class="below-view-btn"        id="gBtnSide"  onclick="setVM('g','side')">Side</button>
+      </div>
+      <div class="preview-below-divider"></div>
+      <span class="preview-below-label">Point Size</span>
+      <input type="range" class="preview-below-slider" id="gPtSizeSlider" min="0.5" max="5" step="0.1" value="1" oninput="setPointSize('g',this.value)">
+      <div class="preview-below-divider"></div>
+      <div class="toggle-wrap" onclick="toggleAutoRotate('g')">
+        <div class="toggle-track on" id="gAutoRotateTrack"><div class="toggle-thumb"></div></div>
+        <span class="toggle-label">Auto Rotate</span>
+      </div>
+    </div>
+    <div class="nav-tooltip hidden" id="gNavTooltip">
+      <div class="nav-tooltip-item"><span class="nav-key">Drag</span><span>Rotate</span></div>
+      <div class="nav-tooltip-item"><span class="nav-key">Scroll</span><span>Zoom</span></div>
+      <div class="nav-tooltip-item"><span class="nav-key">Shift</span><span>+</span><span class="nav-key">Drag</span><span>Pan</span></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary hidden" id="gDownloadAllBtn" onclick="startDownload('ground-all')">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v8M5 7l2.5 2.5L10 7M2 12h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download All Points .LAS
+      </button>
+      <button class="btn btn-green hidden" id="gDownloadGndBtn" onclick="startDownload('ground-only')">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v8M5 7l2.5 2.5L10 7M2 12h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download Ground Only .LAS
+      </button>
+      <button class="btn btn-secondary" onclick="resetMode('ground')">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5C2 4.01 4.01 2 6.5 2c1.45 0 2.75.66 3.61 1.7M11 6.5C11 8.99 8.99 11 6.5 11c-1.45 0-2.75-.66-3.61-1.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10.5 2v2.5h-2.5M2.5 11V8.5H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Load New File
+      </button>
+    </div>
+    <div class="progress-block hidden" id="gExportBlock" style="margin-top:12px;margin-bottom:0"><div class="progress-header"><div class="progress-name"><span>Export</span><span class="phase-tag" id="gExportTag">Waiting</span></div><div class="progress-pct" id="gExportPct">0%</div></div><div class="progress-track"><div class="progress-fill export-fill" id="gExportBar"></div></div></div>
   </div>
 </div>
 
@@ -466,21 +662,29 @@ footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--border); 
   <span>WingtraLIDAR Colorizer &nbsp;·&nbsp; All processing runs locally in your browser</span>
   <span>No data is uploaded to any server</span>
 </footer>
-</div>
+</div><!-- /app -->
 
 <script>
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // LAS CONSTANTS
-// ═══════════════════════════════════════════════════════════════
-const FORMAT_HAS_COLOR={0:false,1:false,2:true,3:true,4:false,5:true,6:false,7:true,8:true,9:false,10:true};
-const FORMAT_UPGRADE={0:2,1:3,4:5,6:8,9:10};
-const FORMAT_SIZE={0:20,1:28,2:26,3:34,4:57,5:63,6:30,7:36,8:38,9:59,10:67};
-const FORMAT_RGB_OFF={2:20,3:28,5:56,7:30,8:30,10:38};
+// ═══════════════════════════════════════════════════════════
+const FORMAT_HAS_COLOR = {0:false,1:false,2:true,3:true,4:false,5:true,6:false,7:true,8:true,9:false,10:true};
+const FORMAT_UPGRADE   = {0:2,1:3,4:5,6:8,9:10};
+const FORMAT_SIZE      = {0:20,1:28,2:26,3:34,4:57,5:63,6:30,7:36,8:38,9:59,10:67};
+const FORMAT_RGB_OFF   = {2:20,3:28,5:56,7:30,8:30,10:38};
+// Classification byte offset within point record
+const FORMAT_CLASS_OFF  = {0:15,1:15,2:15,3:15,4:15,5:15,6:16,7:16,8:16,9:16,10:16};
+// true = full uint8 for class; false = lower 5 bits only
+const FORMAT_CLASS_FULL = {0:false,1:false,2:false,3:false,4:false,5:false,6:true,7:true,8:true,9:true,10:true};
 
-// ═══════════════════════════════════════════════════════════════
-// HEIGHT GRADIENT
-// ═══════════════════════════════════════════════════════════════
-const STOPS=[
+// LAS Classification codes
+const CLASS_UNCLASSIFIED = 1;
+const CLASS_GROUND       = 2;
+
+// ═══════════════════════════════════════════════════════════
+// HEIGHT GRADIENT  (blue → cyan → green → yellow → orange → red)
+// ═══════════════════════════════════════════════════════════
+const STOPS = [
   {t:0.00,r:26, g:35, b:126},{t:0.17,r:2,  g:136,b:209},
   {t:0.33,r:0,  g:172,b:193},{t:0.50,r:56, g:142,b:60 },
   {t:0.67,r:249,g:168,b:37 },{t:0.83,r:244,g:111,b:41 },
@@ -495,56 +699,58 @@ function heightToRGB(t){
   return{r:198,g:40,b:40};
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // SHARED STATE
-// ═══════════════════════════════════════════════════════════════
-let g_activeMode='height';
+// ═══════════════════════════════════════════════════════════
+let g_activeMode = 'height';
 
-// Height mode state
-let hBuffer=null,hColorized=null,hHeader=null,hFilename='';
-let hPreviewXs=[],hPreviewYs=[],hPreviewZs=[];
-let hUserMinZ=null,hUserMaxZ=null,hRecolorizeTimer=null;
+// ── Height mode ──
+let hBuf=null,hColorized=null,hHeader=null,hFilename='';
+let hPxs=[],hPys=[],hPzs=[],hUserMinZ=null,hUserMaxZ=null,hRecolorizeTimer=null;
 
-// Ortho mode state
-let oLasBuffer=null,oTifBuffer=null,oColorized=null,oHeader=null,oLasFilename='',oTifFilename='';
+// ── Ortho mode ──
+let oLasBuf=null,oTifBuf=null,oColorized=null,oHeader=null,oLasFilename='',oTifFilename='';
 let oLasReady=false,oTifReady=false;
 
-// Three.js — height
-let hRenderer=null,hScene=null,hCamera=null,hPoints=null,hAnimId=null;
-let hOrbit={theta:-0.5,phi:1.0,radius:3,panX:0,panY:0};
-let hDrag={down:false,lastX:0,lastY:0};
+// ── Ground mode ──
+let gBuf=null,gColorized=null,gGroundOnly=null,gHeader=null,gFilename='';
+let gGndCount=0,gGndBounds=null;
+let gPrevAll=null,gPrevGnd=null; // {xs,ys,zs,cols}
+let gShowLayer='all',gFileLoaded=false,gClassified=false;
 
-// Three.js — ortho
-let oRenderer=null,oScene=null,oCamera=null,oPoints=null,oAnimId=null;
-let oOrbit={theta:-0.5,phi:1.0,radius:3,panX:0,panY:0};
-let oDrag={down:false,lastX:0,lastY:0};
+// ── Three.js (one renderer per mode canvas) ──
+let hRenderer=null,hScene=null,hCamera=null,hPoints=null,hAnimId=null,hOrbit={theta:-0.5,phi:1.0,radius:3,panX:0,panY:0},hDrag={down:false,lastX:0,lastY:0};
+let oRenderer=null,oScene=null,oCamera=null,oPoints=null,oAnimId=null,oOrbit={theta:-0.5,phi:1.0,radius:3,panX:0,panY:0},oDrag={down:false,lastX:0,lastY:0};
+let gRenderer=null,gScene=null,gCamera=null,gPoints=null,gAnimId=null,gOrbit={theta:-0.5,phi:1.0,radius:3,panX:0,panY:0},gDrag={down:false,lastX:0,lastY:0};
+// Auto-rotate and point size per mode (all on by default)
+const autoRotate={h:true,o:true,g:true};
+const ptSizeMult={h:1,o:1,g:1};
+const basePtSize={h:0.006,o:0.006,g:0.006};
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // MODE SELECTOR
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 function selectMode(mode){
   g_activeMode=mode;
-  document.getElementById('modeCardHeight').classList.toggle('active',mode==='height');
-  document.getElementById('modeCardOrtho').classList.toggle('active',mode==='ortho');
-  document.getElementById('heightWorkflow').classList.toggle('hidden',mode!=='height');
-  document.getElementById('orthoWorkflow').classList.toggle('hidden',mode!=='ortho');
+  ['height','ortho','ground'].forEach(m=>{
+    document.getElementById('modeCard'+m.charAt(0).toUpperCase()+m.slice(1)).classList.toggle('active',m===mode);
+    document.getElementById(m+'Workflow').classList.toggle('hidden',m!==mode);
+  });
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // HELPERS
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 function setBar(barId,pctId,tagId,pct,label,state){
-  const bar=document.getElementById(barId); if(!bar)return;
-  bar.style.width=pct+'%';
+  const b=document.getElementById(barId);if(!b)return;
+  b.style.width=pct+'%';
   document.getElementById(pctId).textContent=Math.round(pct)+'%';
-  const tag=document.getElementById(tagId);
-  if(label)tag.textContent=label;
+  const tag=document.getElementById(tagId);if(label)tag.textContent=label;
   tag.className='phase-tag'+(state==='active'?' active':state==='done'?' done active':'');
-  if(state==='done')bar.classList.add('done'); else bar.classList.remove('done');
+  if(state==='done')b.classList.add('done');else b.classList.remove('done');
 }
-function setStatus(boxId,msg,type='info'){
-  document.getElementById(boxId).innerHTML=
-    `<div class="status-msg ${type}"><div class="dot${type==='processing'?' pulse':''}"></div>${msg}</div>`;
+function setStatus(id,msg,type='info'){
+  document.getElementById(id).innerHTML=`<div class="status-msg ${type}"><div class="dot${type==='processing'?' pulse':''}"></div>${msg}</div>`;
 }
 function fmtNum(n,d=2){return isNaN(n)?'—':n.toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
 function fmtInt(n){return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');}
@@ -567,187 +773,163 @@ function parseHeader(buf){
   return{verMajor,verMinor,headerSize,ptOffset,ptFormat,ptRecLen,numPoints,xScale,yScale,zScale,xOffset,yOffset,zOffset,maxX,minX,maxY,minY,maxZ,minZ};
 }
 
-function buildOutputHeader(inView,outDV,outFmt,outSize){
-  outDV.setUint8(104,outFmt); outDV.setUint16(105,outSize,true);
+function patchHeader(outDV,outFmt,outSize){
+  outDV.setUint8(104,outFmt);outDV.setUint16(105,outSize,true);
   const sw='WingtraLIDAR Colorizer';
-  for(let i=0;i<32;i++) outDV.setUint8(58+i,i<sw.length?sw.charCodeAt(i):0);
+  for(let i=0;i<32;i++)outDV.setUint8(58+i,i<sw.length?sw.charCodeAt(i):0);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// THREE.JS — HEIGHT
-// ═══════════════════════════════════════════════════════════════
-function initThreeHeight(){
-  const wrap=document.getElementById('hPreviewWrap');
-  const canvas=document.getElementById('threeCanvas');
-  const W=wrap.clientWidth,H=Math.max(wrap.clientHeight||480,300);
-  if(hRenderer){cancelAnimationFrame(hAnimId);hRenderer.dispose();}
-  hScene=new THREE.Scene(); hScene.background=new THREE.Color(0x111418);
-  hCamera=new THREE.PerspectiveCamera(45,W/H,0.0001,100000);
-  hRenderer=new THREE.WebGLRenderer({canvas,antialias:false});
-  hRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  hRenderer.setSize(W,H);
-  hScene.add(new THREE.GridHelper(6,24,0x333333,0x222222));
-  setupOrbitControls(canvas,hDrag,hOrbit);
-  hRenderLoop();
+function writeClass(outDV,pointOff,outFmt,classVal){
+  const off=pointOff+FORMAT_CLASS_OFF[outFmt];
+  if(FORMAT_CLASS_FULL[outFmt]){outDV.setUint8(off,classVal);}
+  else{const ex=outDV.getUint8(off);outDV.setUint8(off,(ex&0xE0)|(classVal&0x1F));}
 }
-function hRenderLoop(){
-  hAnimId=requestAnimationFrame(hRenderLoop);
-  const{theta,phi,radius,panX,panY}=hOrbit;
-  hCamera.position.set(radius*Math.sin(phi)*Math.sin(theta)+panX,radius*Math.cos(phi)+panY,radius*Math.sin(phi)*Math.cos(theta));
-  hCamera.lookAt(panX,panY,0);
-  hRenderer.render(hScene,hCamera);
-}
-function setViewMode(mode){
-  document.querySelectorAll('#hPreviewWrap .view-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('btn'+mode.charAt(0).toUpperCase()+mode.slice(1)).classList.add('active');
-  applyViewMode(hOrbit,mode);
+function readClass(dv,pointOff,fmt){
+  const byte=dv.getUint8(pointOff+FORMAT_CLASS_OFF[fmt]);
+  return FORMAT_CLASS_FULL[fmt]?byte:(byte&0x1F);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// THREE.JS — ORTHO
-// ═══════════════════════════════════════════════════════════════
-function initThreeOrtho(){
-  const wrap=document.getElementById('oPreviewWrap');
-  const canvas=document.getElementById('threeCanvasOrtho');
-  const W=wrap.clientWidth,H=Math.max(wrap.clientHeight||480,300);
-  if(oRenderer){cancelAnimationFrame(oAnimId);oRenderer.dispose();}
-  oScene=new THREE.Scene(); oScene.background=new THREE.Color(0x111418);
-  oCamera=new THREE.PerspectiveCamera(45,W/H,0.0001,100000);
-  oRenderer=new THREE.WebGLRenderer({canvas,antialias:false});
-  oRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  oRenderer.setSize(W,H);
-  oScene.add(new THREE.GridHelper(6,24,0x333333,0x222222));
-  setupOrbitControls(canvas,oDrag,oOrbit);
-  oRenderLoop();
-}
-function oRenderLoop(){
-  oAnimId=requestAnimationFrame(oRenderLoop);
-  const{theta,phi,radius,panX,panY}=oOrbit;
-  oCamera.position.set(radius*Math.sin(phi)*Math.sin(theta)+panX,radius*Math.cos(phi)+panY,radius*Math.sin(phi)*Math.cos(theta));
-  oCamera.lookAt(panX,panY,0);
-  oRenderer.render(oScene,oCamera);
-}
-function setViewModeOrtho(mode){
-  document.querySelectorAll('#oPreviewWrap .view-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('oBtn'+mode.charAt(0).toUpperCase()+mode.slice(1)).classList.add('active');
-  applyViewMode(oOrbit,mode);
-}
-
-// ── Shared orbit helpers ──
-function applyViewMode(orbit,mode){
-  orbit.panX=0; orbit.panY=0;
+// ═══════════════════════════════════════════════════════════
+// THREE.JS  shared helpers
+// ═══════════════════════════════════════════════════════════
+function applyVM(orbit,mode){
+  orbit.panX=0;orbit.panY=0;
   if(mode==='3d')   {orbit.theta=-0.5;orbit.phi=1.0;}
-  if(mode==='top')  {orbit.theta=0;orbit.phi=0.01;}
-  if(mode==='front'){orbit.theta=0;orbit.phi=Math.PI/2;}
+  if(mode==='top')  {orbit.theta=0;   orbit.phi=0.01;}
+  if(mode==='front'){orbit.theta=0;   orbit.phi=Math.PI/2;}
   if(mode==='side') {orbit.theta=Math.PI/2;orbit.phi=Math.PI/2;}
 }
-function setupOrbitControls(canvas,drag,orbit){
+function setVM(prefix,mode){
+  const ids={h:['hBtn3d','hBtnTop','hBtnFront','hBtnSide'],o:['oBtn3d','oBtnTop','oBtnFront','oBtnSide'],g:['gBtn3d','gBtnTop','gBtnFront','gBtnSide']};
+  ids[prefix].forEach(id=>document.getElementById(id).classList.remove('active'));
+  const map={h:{'3d':'hBtn3d',top:'hBtnTop',front:'hBtnFront',side:'hBtnSide'},o:{'3d':'oBtn3d',top:'oBtnTop',front:'oBtnFront',side:'oBtnSide'},g:{'3d':'gBtn3d',top:'gBtnTop',front:'gBtnFront',side:'gBtnSide'}};
+  document.getElementById(map[prefix][mode]).classList.add('active');
+  const orbits={h:hOrbit,o:oOrbit,g:gOrbit};
+  applyVM(orbits[prefix],mode);
+}
+function setupOrbit(canvas,drag,orbit){
   canvas.addEventListener('mousedown',e=>{drag.down=true;drag.lastX=e.clientX;drag.lastY=e.clientY;});
   window.addEventListener('mouseup',()=>{drag.down=false;});
   canvas.addEventListener('mousemove',e=>{
     if(!drag.down)return;
-    const dx=e.clientX-drag.lastX,dy=e.clientY-drag.lastY;
-    drag.lastX=e.clientX;drag.lastY=e.clientY;
+    const dx=e.clientX-drag.lastX,dy=e.clientY-drag.lastY;drag.lastX=e.clientX;drag.lastY=e.clientY;
     if(e.shiftKey){const s=orbit.radius*0.0015;orbit.panX-=dx*s;orbit.panY+=dy*s;}
     else{orbit.theta-=dx*0.008;orbit.phi=Math.max(0.05,Math.min(Math.PI-0.05,orbit.phi+dy*0.008));}
   });
   canvas.addEventListener('wheel',e=>{e.preventDefault();orbit.radius=Math.max(0.05,orbit.radius*(1+e.deltaY*0.001));},{passive:false});
   let lpd=null;
-  canvas.addEventListener('touchstart',e=>{
-    if(e.touches.length===1){drag.down=true;drag.lastX=e.touches[0].clientX;drag.lastY=e.touches[0].clientY;lpd=null;}
-    else if(e.touches.length===2){drag.down=false;lpd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}
-  });
-  canvas.addEventListener('touchmove',e=>{
-    e.preventDefault();
-    if(e.touches.length===1&&drag.down){const dx=e.touches[0].clientX-drag.lastX,dy=e.touches[0].clientY-drag.lastY;drag.lastX=e.touches[0].clientX;drag.lastY=e.touches[0].clientY;orbit.theta-=dx*0.008;orbit.phi=Math.max(0.05,Math.min(Math.PI-0.05,orbit.phi+dy*0.008));}
-    else if(e.touches.length===2&&lpd!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);orbit.radius=Math.max(0.05,orbit.radius*(lpd/d));lpd=d;}
-  },{passive:false});
+  canvas.addEventListener('touchstart',e=>{if(e.touches.length===1){drag.down=true;drag.lastX=e.touches[0].clientX;drag.lastY=e.touches[0].clientY;lpd=null;}else if(e.touches.length===2){drag.down=false;lpd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(e.touches.length===1&&drag.down){const dx=e.touches[0].clientX-drag.lastX,dy=e.touches[0].clientY-drag.lastY;drag.lastX=e.touches[0].clientX;drag.lastY=e.touches[0].clientY;orbit.theta-=dx*0.008;orbit.phi=Math.max(0.05,Math.min(Math.PI-0.05,orbit.phi+dy*0.008));}else if(e.touches.length===2&&lpd!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);orbit.radius=Math.max(0.05,orbit.radius*(lpd/d));lpd=d;}},{passive:false});
   canvas.addEventListener('touchend',()=>{drag.down=false;lpd=null;});
 }
 
-function buildPointCloud(scene,orbitRef,xs,ys,zs,cols,header){
-  // remove old points
+function initRenderer(canvasId,orbit,drag){
+  const wrap=document.getElementById(canvasId).parentElement;
+  const canvas=document.getElementById(canvasId);
+  const W=wrap.clientWidth,H=Math.max(wrap.clientHeight||480,300);
+  const scene=new THREE.Scene();scene.background=new THREE.Color(0x111418);
+  const camera=new THREE.PerspectiveCamera(45,W/H,0.0001,100000);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:false});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(W,H);
+  scene.add(new THREE.GridHelper(6,24,0x333333,0x222222));
+  setupOrbit(canvas,drag,orbit);
+  return{scene,camera,renderer};
+}
+
+function makeRenderLoop(rendererObj,orbit,cameraRef,rendererRef,prefix){
+  function loop(){
+    const id=requestAnimationFrame(loop);
+    if(autoRotate[prefix] && !{h:hDrag,o:oDrag,g:gDrag}[prefix].down)
+      orbit.theta+=0.002;
+    const{theta,phi,radius,panX,panY}=orbit;
+    cameraRef.position.set(radius*Math.sin(phi)*Math.sin(theta)+panX,radius*Math.cos(phi)+panY,radius*Math.sin(phi)*Math.cos(theta));
+    cameraRef.lookAt(panX,panY,0);
+    rendererRef.render(rendererObj,cameraRef);
+    return id;
+  }
+  return loop;
+}
+
+function buildPCGeometry(scene,orbit,xs,ys,zs,cols,header,prefix){
   scene.children.filter(c=>c.isPoints).forEach(p=>{scene.remove(p);p.geometry.dispose();p.material.dispose();});
-  const N=xs.length; if(N===0)return null;
+  const N=xs.length;if(N===0)return null;
   const cx=(header.maxX+header.minX)/2,cy=(header.maxY+header.minY)/2,cz=(header.maxZ+header.minZ)/2;
   const span=Math.max(header.maxX-header.minX,header.maxY-header.minY,header.maxZ-header.minZ,0.001);
   const sc=2.0/span;
   const pos=new Float32Array(N*3),col=new Float32Array(N*3);
   for(let i=0;i<N;i++){
-    pos[i*3+0]=(xs[i]-cx)*sc; pos[i*3+1]=(zs[i]-cz)*sc; pos[i*3+2]=(ys[i]-cy)*sc;
-    col[i*3+0]=cols[i].r/255; col[i*3+1]=cols[i].g/255; col[i*3+2]=cols[i].b/255;
+    pos[i*3+0]=(xs[i]-cx)*sc;pos[i*3+1]=(zs[i]-cz)*sc;pos[i*3+2]=(ys[i]-cy)*sc;
+    col[i*3+0]=cols[i].r/255;col[i*3+1]=cols[i].g/255;col[i*3+2]=cols[i].b/255;
   }
   scene.children.filter(c=>c instanceof THREE.GridHelper).forEach(g=>scene.remove(g));
-  const gridH=new THREE.GridHelper(4,24,0x333333,0x222222);
-  gridH.position.y=-((header.maxZ-header.minZ)/2)*sc-0.08;
-  scene.add(gridH);
+  const grid=new THREE.GridHelper(4,24,0x333333,0x222222);
+  grid.position.y=-((header.maxZ-header.minZ)/2)*sc-0.08;scene.add(grid);
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
   geo.setAttribute('color',new THREE.BufferAttribute(col,3));
-  const ptSize=Math.max(0.003,Math.min(0.012,1.5/Math.sqrt(N)));
-  const mat=new THREE.PointsMaterial({size:ptSize,vertexColors:true,sizeAttenuation:true});
-  const pts=new THREE.Points(geo,mat);
-  scene.add(pts);
-  orbitRef.theta=-0.5; orbitRef.phi=1.0; orbitRef.radius=2.8; orbitRef.panX=0; orbitRef.panY=0;
+  const ptSz=Math.max(0.003,Math.min(0.012,1.5/Math.sqrt(N)));
+  if(prefix)basePtSize[prefix]=ptSz;
+  const mat=new THREE.PointsMaterial({size:ptSz*(prefix?ptSizeMult[prefix]:1),vertexColors:true,sizeAttenuation:true});
+  const pts=new THREE.Points(geo,mat);scene.add(pts);
+  Object.assign(orbit,{theta:-0.5,phi:1.0,radius:2.8,panX:0,panY:0});
   return pts;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DROP ZONES — HEIGHT MODE
-// ═══════════════════════════════════════════════════════════════
-function setupDropZone(zoneId,inputId,acceptFn){
-  const zone=document.getElementById(zoneId);
-  const inp=document.getElementById(inputId);
-  zone.addEventListener('click',()=>{ if(!zone.classList.contains('has-file')) inp.click(); });
-  inp.addEventListener('change',e=>{if(e.target.files[0])acceptFn(e.target.files[0]);});
-  zone.addEventListener('dragover',e=>{e.preventDefault();if(!zone.classList.contains('has-file'))zone.classList.add('drag-over');});
-  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
-  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');if(e.dataTransfer.files[0]&&!zone.classList.contains('has-file'))acceptFn(e.dataTransfer.files[0]);});
+// ═══════════════════════════════════════════════════════════
+// DROP ZONE SETUP
+// ═══════════════════════════════════════════════════════════
+function setupDZ(zoneId,inputId,cb){
+  const z=document.getElementById(zoneId),inp=document.getElementById(inputId);
+  z.addEventListener('click',()=>{if(!z.classList.contains('has-file'))inp.click();});
+  inp.addEventListener('change',e=>{if(e.target.files[0])cb(e.target.files[0]);});
+  z.addEventListener('dragover',e=>{e.preventDefault();if(!z.classList.contains('has-file'))z.classList.add('drag-over');});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag-over'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag-over');if(e.dataTransfer.files[0]&&!z.classList.contains('has-file'))cb(e.dataTransfer.files[0]);});
 }
-setupDropZone('dropZoneHeight','fileInputHeight',f=>handleHeightFile(f));
-setupDropZone('dropZoneOrthoLas','fileInputOrthoLas',f=>handleOrthoLas(f));
-setupDropZone('dropZoneOrthoTif','fileInputOrthoTif',f=>handleOrthoTif(f));
+setupDZ('dropZoneHeight','fileInputHeight',f=>handleHeightFile(f));
+setupDZ('dropZoneOrthoLas','fileInputOrthoLas',f=>handleOrthoLas(f));
+setupDZ('dropZoneOrthoTif','fileInputOrthoTif',f=>handleOrthoTif(f));
+setupDZ('dropZoneGround','fileInputGround',f=>handleGroundFile(f));
 
-function markDropZoneDone(zoneId,label){
-  const z=document.getElementById(zoneId);
-  z.classList.add('has-file');
+function markDZ(zoneId,label){
+  const z=document.getElementById(zoneId);z.classList.add('has-file');
   z.innerHTML=`<div class="file-ready-label"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#2e7d32" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="#2e7d32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>${label}</div>`;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HEIGHT MODE — FILE HANDLING
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// GROUND PARAM SLIDERS SETUP
+// ═══════════════════════════════════════════════════════════
+document.getElementById('gParamCellSize').addEventListener('input',e=>{document.getElementById('gParamCellSizeVal').textContent=parseFloat(e.target.value).toFixed(1)+' m';});
+document.getElementById('gParamMaxH').addEventListener('input',e=>{document.getElementById('gParamMaxHVal').textContent=parseFloat(e.target.value).toFixed(2)+' m';});
+document.getElementById('gParamSmooth').addEventListener('input',e=>{document.getElementById('gParamSmoothVal').textContent=e.target.value;});
+document.getElementById('gParamIter').addEventListener('input',e=>{document.getElementById('gParamIterVal').textContent=e.target.value;});
+
+// ═══════════════════════════════════════════════════════════
+// MODE A: HEIGHT COLORIZE
+// ═══════════════════════════════════════════════════════════
 function handleHeightFile(file){
-  if(!file.name.toLowerCase().endsWith('.las')){
-    document.getElementById('heightPanel').classList.remove('hidden');
-    setStatus('hStatusBox','Only .las files are supported.','error'); return;
-  }
+  if(!file.name.toLowerCase().endsWith('.las')){document.getElementById('heightPanel').classList.remove('hidden');setStatus('hStatusBox','Only .las files are supported.','error');return;}
   hFilename=file.name;
   document.getElementById('heightPanel').classList.remove('hidden');
   document.getElementById('hDownloadBtn').classList.add('hidden');
-  ['hPreviewWrap','hPreviewTitle','hColorLegend','hLegendTitle','hSliderSection'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  ['hPreviewWrap','hPreviewTitle','hColorLegend','hLegendTitle','hSliderSection','hPreviewBelowControls'].forEach(id=>document.getElementById(id).classList.add('hidden'));
   setBar('hImportBar','hImportPct','hImportTag',0,'Reading…','active');
   setBar('hColorizeBar','hColorizePct','hColorizeTag',0,'Waiting','');
   setStatus('hStatusBox','Reading file…','processing');
   const reader=new FileReader();
-  reader.onprogress=e=>{if(e.lengthComputable)setBar('hImportBar','hImportPct','hImportTag',(e.loaded/e.total)*100,`Reading… ${formatBytes(e.loaded)} / ${formatBytes(e.total)}`,'active');};
+  reader.onprogress=e=>{if(e.lengthComputable)setBar('hImportBar','hImportPct','hImportTag',(e.loaded/e.total)*100,`${formatBytes(e.loaded)} / ${formatBytes(e.total)}`,'active');};
   reader.onload=e=>{
     setBar('hImportBar','hImportPct','hImportTag',100,'Done','done');
-    hBuffer=e.target.result;
+    hBuf=e.target.result;
     try{
-      const h=parseHeader(hBuffer); hHeader=h;
-      document.getElementById('hStatFile').textContent=file.name;
-      document.getElementById('hStatPts').textContent=fmtInt(h.numPoints);
-      document.getElementById('hStatMinZ').textContent=fmtNum(h.minZ)+' m';
-      document.getElementById('hStatMaxZ').textContent=fmtNum(h.maxZ)+' m';
-      document.getElementById('hStatZRange').textContent=fmtNum(h.maxZ-h.minZ)+' m';
-      document.getElementById('hStatVer').textContent=`${h.verMajor}.${h.verMinor}`;
-      document.getElementById('hStatFmt').textContent=`${h.ptFormat}`;
-      document.getElementById('hStatSize').textContent=formatBytes(file.size);
-      document.getElementById('hLegendMin').textContent=fmtNum(h.minZ)+' m';
-      document.getElementById('hLegendMax').textContent=fmtNum(h.maxZ)+' m';
-      document.getElementById('hColorLegend').classList.remove('hidden');
-      document.getElementById('hLegendTitle').classList.remove('hidden');
+      const h=parseHeader(hBuf);hHeader=h;
+      document.getElementById('hStatFile').textContent=file.name;document.getElementById('hStatPts').textContent=fmtInt(h.numPoints);
+      document.getElementById('hStatMinZ').textContent=fmtNum(h.minZ)+' m';document.getElementById('hStatMaxZ').textContent=fmtNum(h.maxZ)+' m';
+      document.getElementById('hStatZRange').textContent=fmtNum(h.maxZ-h.minZ)+' m';document.getElementById('hStatVer').textContent=`${h.verMajor}.${h.verMinor}`;
+      document.getElementById('hStatFmt').textContent=`${h.ptFormat}`;document.getElementById('hStatSize').textContent=formatBytes(file.size);
+      document.getElementById('hLegendMin').textContent=fmtNum(h.minZ)+' m';document.getElementById('hLegendMax').textContent=fmtNum(h.maxZ)+' m';
+      document.getElementById('hColorLegend').classList.remove('hidden');document.getElementById('hLegendTitle').classList.remove('hidden');
       setBar('hColorizeBar','hColorizePct','hColorizeTag',0,'Starting…','active');
       setStatus('hStatusBox',`Colorizing ${fmtInt(h.numPoints)} points…`,'processing');
       setTimeout(()=>heightColorize(h),60);
@@ -757,386 +939,627 @@ function handleHeightFile(file){
   reader.readAsArrayBuffer(file);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HEIGHT COLORIZE
-// ═══════════════════════════════════════════════════════════════
-function heightColorize(h, customMinZ, customMaxZ){
+function heightColorize(h,customMin,customMax){
   const{ptOffset,ptFormat,ptRecLen,numPoints,zScale,zOffset}=h;
-  const minZ=customMinZ!==undefined?customMinZ:h.minZ;
-  const maxZ=customMaxZ!==undefined?customMaxZ:h.maxZ;
+  const minZ=customMin!==undefined?customMin:h.minZ,maxZ=customMax!==undefined?customMax:h.maxZ;
   const safe_zR=(maxZ-minZ)<1e-9?1:(maxZ-minZ);
-  const inFmt=ptFormat;
-  const outFmt=FORMAT_HAS_COLOR[inFmt]?inFmt:(FORMAT_UPGRADE[inFmt]??inFmt);
-  const inSize=FORMAT_SIZE[inFmt]??ptRecLen;
-  const outSize=FORMAT_SIZE[outFmt]??ptRecLen;
-  const rgbOff=FORMAT_RGB_OFF[outFmt];
-  const inView=new Uint8Array(hBuffer),inDV=new DataView(hBuffer);
-  let outBuf;
-  try{outBuf=new ArrayBuffer(ptOffset+numPoints*outSize);}
-  catch(e){setStatus('hStatusBox','Out of memory — file too large.','error');return;}
+  const outFmt=FORMAT_HAS_COLOR[ptFormat]?ptFormat:(FORMAT_UPGRADE[ptFormat]??ptFormat);
+  const inSize=FORMAT_SIZE[ptFormat]??ptRecLen,outSize=FORMAT_SIZE[outFmt]??ptRecLen,rgbOff=FORMAT_RGB_OFF[outFmt];
+  const inView=new Uint8Array(hBuf),inDV=new DataView(hBuf);
+  let outBuf;try{outBuf=new ArrayBuffer(ptOffset+numPoints*outSize);}catch(e){setStatus('hStatusBox','Out of memory.','error');return;}
   const outBytes=new Uint8Array(outBuf),outDV=new DataView(outBuf);
-  outBytes.set(inView.subarray(0,ptOffset));
-  buildOutputHeader(inView,outDV,outFmt,outSize);
-  const isInitial=customMinZ===undefined;
-  const MAX_PREV=200000,step=numPoints>MAX_PREV?Math.ceil(numPoints/MAX_PREV):1;
-  if(isInitial){hPreviewXs=[];hPreviewYs=[];hPreviewZs=[];}
-  const pxs=[],pys=[],pzs=[],pcols=[];
-  const CHUNK=80000;let processed=0;
+  outBytes.set(inView.subarray(0,ptOffset));patchHeader(outDV,outFmt,outSize);
+  const isInit=customMin===undefined;
+  const step=numPoints>200000?Math.ceil(numPoints/200000):1;
+  if(isInit){hPxs=[];hPys=[];hPzs=[];}
+  const pxs=[],pys=[],pzs=[],pcols=[],CHUNK=80000;let proc=0;
   function chunk(){
-    const end=Math.min(processed+CHUNK,numPoints);
-    for(let i=processed;i<end;i++){
+    const end=Math.min(proc+CHUNK,numPoints);
+    for(let i=proc;i<end;i++){
       const io=ptOffset+i*inSize,oo=ptOffset+i*outSize;
       outBytes.set(inView.subarray(io,io+Math.min(inSize,outSize)),oo);
-      const rawZ=inDV.getInt32(io+8,true),realZ=rawZ*zScale+zOffset;
-      const t=(realZ-minZ)/safe_zR,col=heightToRGB(t);
+      const rz=inDV.getInt32(io+8,true),realZ=rz*zScale+zOffset,t=(realZ-minZ)/safe_zR,col=heightToRGB(t);
       if(rgbOff!==undefined){outDV.setUint16(oo+rgbOff,col.r*256,true);outDV.setUint16(oo+rgbOff+2,col.g*256,true);outDV.setUint16(oo+rgbOff+4,col.b*256,true);}
       if(i%step===0){
-        if(isInitial){hPreviewXs.push(inDV.getInt32(io+0,true)*h.xScale+h.xOffset);hPreviewYs.push(inDV.getInt32(io+4,true)*h.yScale+h.yOffset);hPreviewZs.push(realZ);}
-        pxs.push(hPreviewXs[pxs.length]);pys.push(hPreviewYs[pys.length]);pzs.push(realZ);pcols.push(col);
+        if(isInit){hPxs.push(inDV.getInt32(io+0,true)*h.xScale+h.xOffset);hPys.push(inDV.getInt32(io+4,true)*h.yScale+h.yOffset);hPzs.push(realZ);}
+        pxs.push(hPxs[pxs.length]);pys.push(hPys[pys.length]);pzs.push(realZ);pcols.push(col);
       }
     }
-    processed=end;
-    setBar('hColorizeBar','hColorizePct','hColorizeTag',(processed/numPoints)*100,`${fmtInt(processed)} / ${fmtInt(numPoints)} pts`,'active');
-    if(processed<numPoints){setTimeout(chunk,0);return;}
-    hColorized=outBuf;
-    setBar('hColorizeBar','hColorizePct','hColorizeTag',100,'Done','done');
-    if(isInitial){
+    proc=end;setBar('hColorizeBar','hColorizePct','hColorizeTag',(proc/numPoints)*100,`${fmtInt(proc)} / ${fmtInt(numPoints)} pts`,'active');
+    if(proc<numPoints){setTimeout(chunk,0);return;}
+    hColorized=outBuf;setBar('hColorizeBar','hColorizePct','hColorizeTag',100,'Done','done');
+    if(isInit){
       setStatus('hStatusBox','Building 3D preview…','processing');
       setTimeout(()=>{
-        document.getElementById('hPreviewWrap').classList.remove('hidden');
-        document.getElementById('hPreviewTitle').classList.remove('hidden');
-        document.getElementById('hPreviewPts').textContent=`${fmtInt(pxs.length)} pts${step>1?' (sampled)':''}`;
-        initThreeHeight();
-        hPoints=buildPointCloud(hScene,hOrbit,pxs,pys,pzs,pcols,h);
-        setupHeightSliders(h);
-        setStatus('hStatusBox',`Colorization complete &nbsp;·&nbsp; ${fmtInt(numPoints)} points &nbsp;·&nbsp; format ${outFmt}`,'success');
+        document.getElementById('hPreviewWrap').classList.remove('hidden');document.getElementById('hPreviewTitle').classList.remove('hidden');
+        document.getElementById('hPreviewBelowControls').classList.remove('hidden');
+        document.getElementById('hNavTooltip').classList.remove('hidden');
+        const r=initRenderer('threeCanvasHeight',hOrbit,hDrag);hScene=r.scene;hCamera=r.camera;if(hRenderer)hRenderer.dispose();hRenderer=r.renderer;
+        hPoints=buildPCGeometry(hScene,hOrbit,pxs,pys,pzs,pcols,h,'h');
+        if(hAnimId)cancelAnimationFrame(hAnimId);hAnimId=makeRenderLoop(hScene,hOrbit,hCamera,hRenderer,'h')();
+        setupHSliders(h);
+        setStatus('hStatusBox',`Done &nbsp;·&nbsp; ${fmtInt(numPoints)} points &nbsp;·&nbsp; format ${outFmt}`,'success');
         document.getElementById('hDownloadBtn').classList.remove('hidden');
       },40);
     } else {
-      // Re-colorize after slider — just update 3D colors
-      if(hPoints){
-        const colorAttr=hPoints.geometry.attributes.color;
-        for(let i=0;i<hPreviewZs.length;i++){const t=(hPreviewZs[i]-minZ)/safe_zR;const c=heightToRGB(t);colorAttr.setXYZ(i,c.r/255,c.g/255,c.b/255);}
-        colorAttr.needsUpdate=true;
-      }
+      if(hPoints){const ca=hPoints.geometry.attributes.color;for(let i=0;i<hPzs.length;i++){const t=(hPzs[i]-minZ)/safe_zR,c=heightToRGB(t);ca.setXYZ(i,c.r/255,c.g/255,c.b/255);}ca.needsUpdate=true;}
       document.getElementById('hRecolorizeBadge').classList.add('hidden');
-      setStatus('hStatusBox',`Re-colorized &nbsp;·&nbsp; range ${fmtNum(minZ)} m → ${fmtNum(maxZ)} m`,'success');
+      setStatus('hStatusBox',`Re-colorized &nbsp;·&nbsp; ${fmtNum(minZ)} m → ${fmtNum(maxZ)} m`,'success');
       document.getElementById('hDownloadBtn').disabled=false;
     }
   }
   chunk();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HEIGHT SLIDERS
-// ═══════════════════════════════════════════════════════════════
-function setupHeightSliders(h){
-  hUserMinZ=h.minZ; hUserMaxZ=h.maxZ;
+function setupHSliders(h){
+  hUserMinZ=h.minZ;hUserMaxZ=h.maxZ;
   const range=h.maxZ-h.minZ,dec=range<10?3:range<100?2:1;
   const sMin=document.getElementById('sliderMin'),sMax=document.getElementById('sliderMax');
   const iMin=document.getElementById('inputMin'),iMax=document.getElementById('inputMax');
-  sMin.min=sMax.min=h.minZ; sMin.max=sMax.max=h.maxZ;
-  sMin.step=sMax.step=range/1000;
-  sMin.value=h.minZ; sMax.value=h.maxZ;
-  iMin.value=h.minZ.toFixed(dec); iMax.value=h.maxZ.toFixed(dec);
-  iMin.min=h.minZ; iMin.max=h.maxZ; iMax.min=h.minZ; iMax.max=h.maxZ;
-  updateSliderTrack();
-  document.getElementById('hSliderSection').classList.remove('hidden');
-  sMin.oninput=()=>{let v=parseFloat(sMin.value);if(v>=hUserMaxZ)v=hUserMaxZ-range/1000;hUserMinZ=v;iMin.value=v.toFixed(dec);updateSliderTrack();scheduleRecolorize();};
-  sMax.oninput=()=>{let v=parseFloat(sMax.value);if(v<=hUserMinZ)v=hUserMinZ+range/1000;hUserMaxZ=v;iMax.value=v.toFixed(dec);updateSliderTrack();scheduleRecolorize();};
-  iMin.onchange=()=>{let v=Math.max(h.minZ,Math.min(hUserMaxZ-range/1000,parseFloat(iMin.value)));if(isNaN(v))v=h.minZ;hUserMinZ=v;sMin.value=v;iMin.value=v.toFixed(dec);updateSliderTrack();scheduleRecolorize();};
-  iMax.onchange=()=>{let v=Math.min(h.maxZ,Math.max(hUserMinZ+range/1000,parseFloat(iMax.value)));if(isNaN(v))v=h.maxZ;hUserMaxZ=v;sMax.value=v;iMax.value=v.toFixed(dec);updateSliderTrack();scheduleRecolorize();};
+  sMin.min=sMax.min=h.minZ;sMin.max=sMax.max=h.maxZ;sMin.step=sMax.step=range/1000;
+  sMin.value=h.minZ;sMax.value=h.maxZ;iMin.value=h.minZ.toFixed(dec);iMax.value=h.maxZ.toFixed(dec);
+  updateHTrack();document.getElementById('hSliderSection').classList.remove('hidden');
+  sMin.oninput=()=>{let v=parseFloat(sMin.value);if(v>=hUserMaxZ)v=hUserMaxZ-range/1000;hUserMinZ=v;iMin.value=v.toFixed(dec);updateHTrack();schedHRecolorize();};
+  sMax.oninput=()=>{let v=parseFloat(sMax.value);if(v<=hUserMinZ)v=hUserMinZ+range/1000;hUserMaxZ=v;iMax.value=v.toFixed(dec);updateHTrack();schedHRecolorize();};
+  iMin.onchange=()=>{let v=Math.max(h.minZ,Math.min(hUserMaxZ-range/1000,parseFloat(iMin.value)));if(isNaN(v))v=h.minZ;hUserMinZ=v;sMin.value=v;iMin.value=v.toFixed(dec);updateHTrack();schedHRecolorize();};
+  iMax.onchange=()=>{let v=Math.min(h.maxZ,Math.max(hUserMinZ+range/1000,parseFloat(iMax.value)));if(isNaN(v))v=h.maxZ;hUserMaxZ=v;sMax.value=v;iMax.value=v.toFixed(dec);updateHTrack();schedHRecolorize();};
 }
-function updateSliderTrack(){
-  const h=hHeader;if(!h)return;
-  const range=h.maxZ-h.minZ;if(range<1e-9)return;
+function updateHTrack(){
+  const h=hHeader;if(!h)return;const range=h.maxZ-h.minZ;if(range<1e-9)return;
   const p1=((hUserMinZ-h.minZ)/range)*100,p2=((hUserMaxZ-h.minZ)/range)*100;
   document.getElementById('sliderMin').style.background=`linear-gradient(to right,var(--bg3) 0%,var(--bg3) ${p1}%,#1565c0 ${p1}%,#1565c0 100%)`;
   document.getElementById('sliderMax').style.background=`linear-gradient(to right,#c62828 0%,#c62828 ${p2}%,var(--bg3) ${p2}%,var(--bg3) 100%)`;
-  document.getElementById('hLegendMin').textContent=fmtNum(hUserMinZ)+' m';
-  document.getElementById('hLegendMax').textContent=fmtNum(hUserMaxZ)+' m';
+  document.getElementById('hLegendMin').textContent=fmtNum(hUserMinZ)+' m';document.getElementById('hLegendMax').textContent=fmtNum(hUserMaxZ)+' m';
 }
-function scheduleRecolorize(){
-  document.getElementById('hRecolorizeBadge').classList.remove('hidden');
-  document.getElementById('hDownloadBtn').disabled=true;
-  clearTimeout(hRecolorizeTimer);
-  hRecolorizeTimer=setTimeout(()=>{
-    setBar('hColorizeBar','hColorizePct','hColorizeTag',0,'Re-colorizing…','active');
-    setTimeout(()=>heightColorize(hHeader,hUserMinZ,hUserMaxZ),30);
-  },600);
+function schedHRecolorize(){
+  document.getElementById('hRecolorizeBadge').classList.remove('hidden');document.getElementById('hDownloadBtn').disabled=true;
+  clearTimeout(hRecolorizeTimer);hRecolorizeTimer=setTimeout(()=>{setBar('hColorizeBar','hColorizePct','hColorizeTag',0,'Re-colorizing…','active');setTimeout(()=>heightColorize(hHeader,hUserMinZ,hUserMaxZ),30);},600);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ORTHO MODE — FILE HANDLING
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// MODE B: ORTHO COLORIZE
+// ═══════════════════════════════════════════════════════════
 function handleOrthoLas(file){
   if(!file.name.toLowerCase().endsWith('.las')){alert('Please select a .las file.');return;}
-  oLasFilename=file.name; oLasReady=false;
+  oLasFilename=file.name;oLasReady=false;
   setBar('oLasBar','oLasPct','oLasTag',0,'Reading…','active');
-  document.getElementById('orthoPanel').classList.remove('hidden');
-  setStatus('oStatusBox','Reading LAS file…','processing');
+  document.getElementById('orthoPanel').classList.remove('hidden');setStatus('oStatusBox','Reading LAS…','processing');
   const reader=new FileReader();
   reader.onprogress=e=>{if(e.lengthComputable)setBar('oLasBar','oLasPct','oLasTag',(e.loaded/e.total)*100,`${formatBytes(e.loaded)} / ${formatBytes(e.total)}`,'active');};
   reader.onload=e=>{
-    setBar('oLasBar','oLasPct','oLasTag',100,'Done','done');
-    oLasBuffer=e.target.result;
+    setBar('oLasBar','oLasPct','oLasTag',100,'Done','done');oLasBuf=e.target.result;
     try{
-      const h=parseHeader(oLasBuffer); oHeader=h;
-      document.getElementById('oStatLasFile').textContent=file.name;
-      document.getElementById('oStatPts').textContent=fmtInt(h.numPoints);
-      document.getElementById('oStatVer').textContent=`${h.verMajor}.${h.verMinor}`;
-      document.getElementById('oStatLasSize').textContent=formatBytes(file.size);
-      oLasReady=true;
-      markDropZoneDone('dropZoneOrthoLas',file.name);
-      setStatus('oStatusBox',oTifReady?'Both files ready — processing…':'LAS loaded. Now drop your .tif file.','info');
-      if(oTifReady) startOrthoProcessing();
+      const h=parseHeader(oLasBuf);oHeader=h;
+      document.getElementById('oStatLasFile').textContent=file.name;document.getElementById('oStatPts').textContent=fmtInt(h.numPoints);
+      document.getElementById('oStatVer').textContent=`${h.verMajor}.${h.verMinor}`;document.getElementById('oStatLasSize').textContent=formatBytes(file.size);
+      oLasReady=true;markDZ('dropZoneOrthoLas',file.name);
+      setStatus('oStatusBox',oTifReady?'Both ready — processing…':'LAS loaded. Drop .tif file.','info');
+      if(oTifReady)startOrtho();
     }catch(err){setStatus('oStatusBox','LAS parse error: '+err.message,'error');}
   };
   reader.onerror=()=>setStatus('oStatusBox','Failed to read LAS.','error');
   reader.readAsArrayBuffer(file);
 }
-
 function handleOrthoTif(file){
-  if(!file.name.toLowerCase().match(/\.tiff?$/)){alert('Please select a .tif or .tiff file.');return;}
-  oTifFilename=file.name; oTifReady=false;
+  if(!file.name.toLowerCase().match(/\.tiff?$/)){alert('Please select a .tif/.tiff file.');return;}
+  oTifFilename=file.name;oTifReady=false;
   setBar('oTifBar','oTifPct','oTifTag',0,'Reading…','active');
   document.getElementById('orthoPanel').classList.remove('hidden');
-  setStatus('oStatusBox','Reading TIF file…','processing');
-  document.getElementById('oStatTifFile').textContent=file.name;
-  document.getElementById('oStatTifSize').textContent=formatBytes(file.size);
+  document.getElementById('oStatTifFile').textContent=file.name;document.getElementById('oStatTifSize').textContent=formatBytes(file.size);
   const reader=new FileReader();
   reader.onprogress=e=>{if(e.lengthComputable)setBar('oTifBar','oTifPct','oTifTag',(e.loaded/e.total)*100,`${formatBytes(e.loaded)} / ${formatBytes(e.total)}`,'active');};
   reader.onload=e=>{
-    setBar('oTifBar','oTifPct','oTifTag',100,'Done','done');
-    oTifBuffer=e.target.result;
-    oTifReady=true;
-    markDropZoneDone('dropZoneOrthoTif',file.name);
-    setStatus('oStatusBox',oLasReady?'Both files ready — processing…':'TIF loaded. Now drop your .las file.','info');
-    if(oLasReady) startOrthoProcessing();
+    setBar('oTifBar','oTifPct','oTifTag',100,'Done','done');oTifBuf=e.target.result;oTifReady=true;markDZ('dropZoneOrthoTif',file.name);
+    setStatus('oStatusBox',oLasReady?'Both ready — processing…':'TIF loaded. Drop .las file.','info');
+    if(oLasReady)startOrtho();
   };
   reader.onerror=()=>setStatus('oStatusBox','Failed to read TIF.','error');
   reader.readAsArrayBuffer(file);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ORTHO PROCESSING — SAMPLE RGB FROM GEOTIFF
-// ═══════════════════════════════════════════════════════════════
-async function startOrthoProcessing(){
+async function startOrtho(){
   setStatus('oStatusBox','Parsing GeoTIFF…','processing');
-  setBar('oSampleBar','oSamplePct','oSampleTag',0,'Waiting','');
-  setBar('oDecodeBar','oDecodePct','oDecodeTag',0,'Waiting','');
-
-  let tifImage, bbox, tifWidth, tifHeight, bands, numBands, maxVal;
+  setBar('oSampleBar','oSamplePct','oSampleTag',0,'Waiting','');setBar('oDecodeBar','oDecodePct','oDecodeTag',0,'Waiting','');
+  let tifImage,bbox,tifW,tifH,bands,numBands,maxVal;
   try{
-    const tiff=await GeoTIFF.fromArrayBuffer(oTifBuffer);
-    tifImage=await tiff.getImage();
-    bbox=tifImage.getBoundingBox();
-    tifWidth=tifImage.getWidth();
-    tifHeight=tifImage.getHeight();
-    numBands=tifImage.getSamplesPerPixel();
+    const tiff=await GeoTIFF.fromArrayBuffer(oTifBuf);tifImage=await tiff.getImage();
+    bbox=tifImage.getBoundingBox();tifW=tifImage.getWidth();tifH=tifImage.getHeight();numBands=tifImage.getSamplesPerPixel();
     if(numBands<3){setStatus('oStatusBox','TIF must have at least 3 bands (RGB). Found: '+numBands,'error');return;}
-    document.getElementById('oStatTifRes').textContent=`${tifWidth} × ${tifHeight}`;
-    document.getElementById('oStatTifBands').textContent=`${numBands} (RGB${numBands>3?'+':')'})`;
-
-    // ── Decode TIF rasters with simulated progress ──
-    // readRasters() has no progress callback, so we animate the bar
-    // while the promise is in flight, then snap to 100% when done.
-    setBar('oDecodeBar','oDecodePct','oDecodeTag',0,'Decoding pixels…','active');
-    setStatus('oStatusBox','Decoding raster data (may take a moment for large TIFs)…','processing');
-
-    let decPct=0, decDone=false;
-    const decTimer=setInterval(()=>{
-      if(decDone)return;
-      // Ease toward 92% while waiting — never reaches 100% on its own
-      decPct=decPct+(92-decPct)*0.06;
-      document.getElementById('oDecodeBar').style.width=decPct+'%';
-      document.getElementById('oDecodePct').textContent=Math.round(decPct)+'%';
-    },120);
-
-    bands=await tifImage.readRasters({interleave:false});
-
-    clearInterval(decTimer);
-    decDone=true;
+    document.getElementById('oStatTifRes').textContent=`${tifW} × ${tifH}`;document.getElementById('oStatTifBands').textContent=`${numBands} (RGB${numBands>3?'+':')'})`;
+    setBar('oDecodeBar','oDecodePct','oDecodeTag',0,'Decoding…','active');setStatus('oStatusBox','Decoding raster data…','processing');
+    let dp=0,done=false;
+    const dt=setInterval(()=>{if(done)return;dp=dp+(92-dp)*0.06;document.getElementById('oDecodeBar').style.width=dp+'%';document.getElementById('oDecodePct').textContent=Math.round(dp)+'%';},120);
+    bands=await tifImage.readRasters({interleave:false});clearInterval(dt);done=true;
     setBar('oDecodeBar','oDecodePct','oDecodeTag',100,'Done','done');
+    maxVal=Math.max(...[0,1,2].map(b=>{const a=bands[b];let m=0;for(let i=0;i<Math.min(a.length,10000);i++)if(a[i]>m)m=a[i];return m;}));
+  }catch(e){setStatus('oStatusBox','GeoTIFF error: '+e.message,'error');console.error(e);return;}
 
-    maxVal=Math.max(...[0,1,2].map(b=>{const arr=bands[b];let m=0;for(let i=0;i<Math.min(arr.length,10000);i++)if(arr[i]>m)m=arr[i];return m;}));
-    setStatus('oStatusBox','Sampling point colors…','processing');
-  }catch(e){
-    setStatus('oStatusBox','GeoTIFF parse error: '+e.message,'error');
-    console.error(e); return;
-  }
-
-  const h=oHeader;
-  const{ptOffset,ptFormat,ptRecLen,numPoints,xScale,yScale,zScale,xOffset,yOffset,zOffset}=h;
-  const inFmt=ptFormat;
-  const outFmt=FORMAT_HAS_COLOR[inFmt]?inFmt:(FORMAT_UPGRADE[inFmt]??inFmt);
-  const inSize=FORMAT_SIZE[inFmt]??ptRecLen;
-  const outSize=FORMAT_SIZE[outFmt]??ptRecLen;
-  const rgbOff=FORMAT_RGB_OFF[outFmt];
-  const inView=new Uint8Array(oLasBuffer),inDV=new DataView(oLasBuffer);
-
-  let outBuf;
-  try{outBuf=new ArrayBuffer(ptOffset+numPoints*outSize);}
-  catch(e){setStatus('oStatusBox','Out of memory.','error');return;}
+  const h=oHeader;const{ptOffset,ptFormat,ptRecLen,numPoints,xScale,yScale,zScale,xOffset,yOffset,zOffset}=h;
+  const outFmt=FORMAT_HAS_COLOR[ptFormat]?ptFormat:(FORMAT_UPGRADE[ptFormat]??ptFormat);
+  const inSize=FORMAT_SIZE[ptFormat]??ptRecLen,outSize=FORMAT_SIZE[outFmt]??ptRecLen,rgbOff=FORMAT_RGB_OFF[outFmt];
+  const inView=new Uint8Array(oLasBuf),inDV=new DataView(oLasBuf);
+  let outBuf;try{outBuf=new ArrayBuffer(ptOffset+numPoints*outSize);}catch(e){setStatus('oStatusBox','Out of memory.','error');return;}
   const outBytes=new Uint8Array(outBuf),outDV=new DataView(outBuf);
-  outBytes.set(inView.subarray(0,ptOffset));
-  buildOutputHeader(inView,outDV,outFmt,outSize);
-
+  outBytes.set(inView.subarray(0,ptOffset));patchHeader(outDV,outFmt,outSize);
   const tifSpanX=bbox[2]-bbox[0],tifSpanY=bbox[3]-bbox[1];
-  const normalize=maxVal>255?(v=>Math.round((v/maxVal)*255)):(v=>v);
-  const rBand=bands[0],gBand=bands[1],bBand=bands[2];
-
-  const MAX_PREV=200000,step=numPoints>MAX_PREV?Math.ceil(numPoints/MAX_PREV):1;
-  const pxs=[],pys=[],pzs=[],pcols=[];
-  const CHUNK=80000;let processed=0;
-
+  const norm=maxVal>255?(v=>Math.round((v/maxVal)*255)):(v=>v);
+  const rB=bands[0],gB=bands[1],bB=bands[2];
+  const step=numPoints>200000?Math.ceil(numPoints/200000):1;
+  const pxs=[],pys=[],pzs=[],pcols=[],CHUNK=80000;let proc=0;
   setBar('oSampleBar','oSamplePct','oSampleTag',0,'Sampling…','active');
-
   function chunk(){
-    const end=Math.min(processed+CHUNK,numPoints);
-    for(let i=processed;i<end;i++){
+    const end=Math.min(proc+CHUNK,numPoints);
+    for(let i=proc;i<end;i++){
       const io=ptOffset+i*inSize,oo=ptOffset+i*outSize;
       outBytes.set(inView.subarray(io,io+Math.min(inSize,outSize)),oo);
-      const wx=inDV.getInt32(io+0,true)*xScale+xOffset;
-      const wy=inDV.getInt32(io+4,true)*yScale+yOffset;
-      const wz=inDV.getInt32(io+8,true)*zScale+zOffset;
-
-      // Map world XY → pixel col/row
-      let col=Math.floor((wx-bbox[0])/tifSpanX*tifWidth);
-      let row=Math.floor((bbox[3]-wy)/tifSpanY*tifHeight);
-      col=Math.max(0,Math.min(tifWidth-1,col));
-      row=Math.max(0,Math.min(tifHeight-1,row));
-      const idx=row*tifWidth+col;
-
-      const r=normalize(rBand[idx]??0);
-      const g=normalize(gBand[idx]??0);
-      const b=normalize(bBand[idx]??0);
-
+      const wx=inDV.getInt32(io+0,true)*xScale+xOffset,wy=inDV.getInt32(io+4,true)*yScale+yOffset,wz=inDV.getInt32(io+8,true)*zScale+zOffset;
+      let pc=Math.max(0,Math.min(tifW-1,Math.floor((wx-bbox[0])/tifSpanX*tifW)));
+      let pr=Math.max(0,Math.min(tifH-1,Math.floor((bbox[3]-wy)/tifSpanY*tifH)));
+      const idx=pr*tifW+pc,r=norm(rB[idx]??0),g=norm(gB[idx]??0),b=norm(bB[idx]??0);
       if(rgbOff!==undefined){outDV.setUint16(oo+rgbOff,r*256,true);outDV.setUint16(oo+rgbOff+2,g*256,true);outDV.setUint16(oo+rgbOff+4,b*256,true);}
       if(i%step===0){pxs.push(wx);pys.push(wy);pzs.push(wz);pcols.push({r,g,b});}
     }
-    processed=end;
-    setBar('oSampleBar','oSamplePct','oSampleTag',(processed/numPoints)*100,`${fmtInt(processed)} / ${fmtInt(numPoints)} pts`,'active');
-    if(processed<numPoints){setTimeout(chunk,0);return;}
-
-    oColorized=outBuf;
-    setBar('oSampleBar','oSamplePct','oSampleTag',100,'Done','done');
+    proc=end;setBar('oSampleBar','oSamplePct','oSampleTag',(proc/numPoints)*100,`${fmtInt(proc)} / ${fmtInt(numPoints)} pts`,'active');
+    if(proc<numPoints){setTimeout(chunk,0);return;}
+    oColorized=outBuf;setBar('oSampleBar','oSamplePct','oSampleTag',100,'Done','done');
     setStatus('oStatusBox','Building 3D preview…','processing');
     setTimeout(()=>{
-      document.getElementById('oPreviewWrap').classList.remove('hidden');
-      document.getElementById('oPreviewTitle').classList.remove('hidden');
-      document.getElementById('oPreviewPts').textContent=`${fmtInt(pxs.length)} pts${step>1?' (sampled)':''}`;
-      initThreeOrtho();
-      oPoints=buildPointCloud(oScene,oOrbit,pxs,pys,pzs,pcols,h);
-      setStatus('oStatusBox',`Colorization complete &nbsp;·&nbsp; ${fmtInt(numPoints)} points &nbsp;·&nbsp; sampled from ${tifWidth}×${tifHeight} ortho`,'success');
+      document.getElementById('oPreviewWrap').classList.remove('hidden');document.getElementById('oPreviewTitle').classList.remove('hidden');
+      document.getElementById('oPreviewBelowControls').classList.remove('hidden');
+      document.getElementById('oNavTooltip').classList.remove('hidden');
+      const r2=initRenderer('threeCanvasOrtho',oOrbit,oDrag);oScene=r2.scene;oCamera=r2.camera;if(oRenderer)oRenderer.dispose();oRenderer=r2.renderer;
+      oPoints=buildPCGeometry(oScene,oOrbit,pxs,pys,pzs,pcols,h,'o');
+      if(oAnimId)cancelAnimationFrame(oAnimId);oAnimId=makeRenderLoop(oScene,oOrbit,oCamera,oRenderer,'o')();
+      setStatus('oStatusBox',`Done &nbsp;·&nbsp; ${fmtInt(numPoints)} pts &nbsp;·&nbsp; ${tifW}×${tifH} ortho`,'success');
       document.getElementById('oDownloadBtn').classList.remove('hidden');
     },40);
   }
   chunk();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// EXPORT
-// ═══════════════════════════════════════════════════════════════
-function startDownload(mode){
-  const btnId=mode==='height'?'hDownloadBtn':'oDownloadBtn';
-  const blockId=mode==='height'?'hExportBlock':'oExportBlock';
-  const barId=mode==='height'?'hExportBar':'oExportBar';
-  const pctId=mode==='height'?'hExportPct':'oExportPct';
-  const tagId=mode==='height'?'hExportTag':'oExportTag';
-  const sbId=mode==='height'?'hStatusBox':'oStatusBox';
-  const buf=mode==='height'?hColorized:oColorized;
-  const fname=mode==='height'?hFilename:oLasFilename;
-  if(!buf)return;
-  document.getElementById(btnId).disabled=true;
-  document.getElementById(blockId).classList.remove('hidden');
-  setBar(barId,pctId,tagId,0,'Starting…','active');
-  setStatus(sbId,'Preparing download…','processing');
-  setTimeout(()=>encodeExport(buf,fname,barId,pctId,tagId,sbId,btnId),30);
+// ═══════════════════════════════════════════════════════════
+// MODE C: GROUND CLASSIFICATION
+// ═══════════════════════════════════════════════════════════
+
+// ── File handler ──
+function handleGroundFile(file){
+  if(!file.name.toLowerCase().endsWith('.las')){document.getElementById('groundPanel').classList.remove('hidden');setStatus('gStatusBox','Only .las files are supported.','error');return;}
+  gFilename=file.name;gFileLoaded=false;gClassified=false;
+  document.getElementById('groundPanel').classList.remove('hidden');
+  document.getElementById('gDownloadAllBtn').classList.add('hidden');document.getElementById('gDownloadGndBtn').classList.add('hidden');
+  ['gPreviewWrap','gPreviewTitle','gPreviewControls','gColorLegend','gLegendTitle'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  setBar('gImportBar','gImportPct','gImportTag',0,'Reading…','active');
+  setBar('gSurfaceBar','gSurfacePct','gSurfaceTag',0,'Waiting','');
+  setBar('gClassifyBar','gClassifyPct','gClassifyTag',0,'Waiting','');
+  setStatus('gStatusBox','Reading file…','processing');
+  document.getElementById('gRunBtn').disabled=true;
+  const reader=new FileReader();
+  reader.onprogress=e=>{if(e.lengthComputable)setBar('gImportBar','gImportPct','gImportTag',(e.loaded/e.total)*100,`${formatBytes(e.loaded)} / ${formatBytes(e.total)}`,'active');};
+  reader.onload=e=>{
+    setBar('gImportBar','gImportPct','gImportTag',100,'Done','done');
+    gBuf=e.target.result;
+    try{
+      const h=parseHeader(gBuf);gHeader=h;
+      document.getElementById('gStatFile').textContent=file.name;document.getElementById('gStatPts').textContent=fmtInt(h.numPoints);
+      document.getElementById('gStatGndPts').textContent='—';document.getElementById('gStatGndPct').textContent='—';
+      document.getElementById('gStatMinZ').textContent=fmtNum(h.minZ)+' m';document.getElementById('gStatMaxZ').textContent=fmtNum(h.maxZ)+' m';
+      document.getElementById('gStatVer').textContent=`${h.verMajor}.${h.verMinor}`;document.getElementById('gStatSize').textContent=formatBytes(file.size);
+      document.getElementById('gLegendMin').textContent=fmtNum(h.minZ)+' m';document.getElementById('gLegendMax').textContent=fmtNum(h.maxZ)+' m';
+      gFileLoaded=true;document.getElementById('gRunBtn').disabled=false;
+      setStatus('gStatusBox','File loaded. Adjust parameters and click Run Ground Classification.','info');
+    }catch(err){setStatus('gStatusBox','Parse error: '+err.message,'error');}
+  };
+  reader.onerror=()=>setStatus('gStatusBox','Failed to read file.','error');
+  reader.readAsArrayBuffer(file);
 }
 
-async function encodeExport(buf,fname,barId,pctId,tagId,sbId,btnId){
-  const bytes=new Uint8Array(buf),total=bytes.length;
-  const outName=fname.replace(/\.las$/i,'')+'_colorized.las';
-  if(window.showSaveFilePicker){
-    try{
-      const handle=await window.showSaveFilePicker({suggestedName:outName,types:[{description:'LAS Point Cloud',accept:{'application/octet-stream':['.las']}}]});
-      const writable=await handle.createWritable();
-      const CHUNK=1024*1024;let offset=0;
-      while(offset<total){const end=Math.min(offset+CHUNK,total);await writable.write(bytes.subarray(offset,end));offset=end;setBar(barId,pctId,tagId,(offset/total)*100,`Writing… ${formatBytes(offset)} / ${formatBytes(total)}`,'active');}
-      await writable.close();
-      setBar(barId,pctId,tagId,100,'Done','done');
-      setStatus(sbId,`File saved &nbsp;·&nbsp; ${formatBytes(total)}`,'success');
-      document.getElementById(btnId).disabled=false; return;
-    }catch(e){
-      if(e.name==='AbortError'){setStatus(sbId,'Download cancelled.','info');document.getElementById(btnId).disabled=false;setBar(barId,pctId,tagId,0,'Cancelled','');return;}
+// ── Main classification entry point ──
+function runGroundClassification(){
+  if(!gFileLoaded||!gHeader)return;
+  document.getElementById('gRunBtn').disabled=true;
+  document.getElementById('gDownloadAllBtn').classList.add('hidden');document.getElementById('gDownloadGndBtn').classList.add('hidden');
+  ['gPreviewWrap','gPreviewTitle','gPreviewControls','gColorLegend','gLegendTitle'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  const cellSize  = parseFloat(document.getElementById('gParamCellSize').value);
+  const maxHeight = parseFloat(document.getElementById('gParamMaxH').value);
+  const smoothPasses = parseInt(document.getElementById('gParamSmooth').value);
+  const iterations   = parseInt(document.getElementById('gParamIter').value);
+  setBar('gSurfaceBar','gSurfacePct','gSurfaceTag',0,'Starting…','active');
+  setBar('gClassifyBar','gClassifyPct','gClassifyTag',0,'Waiting','');
+  setStatus('gStatusBox','Building initial ground surface…','processing');
+  setTimeout(()=>gBuildSurface(cellSize,maxHeight,smoothPasses,iterations),40);
+}
+
+// ── Build DTM ──
+function gBuildDTM(inDV,numPoints,ptOffset,inSize,h,classArr,onlyGround,gridW,gridH,cellSize){
+  const{xScale,yScale,zScale,xOffset,yOffset,zOffset,minX,minY}=h;
+  const dtm=new Float32Array(gridW*gridH).fill(Infinity);
+  for(let i=0;i<numPoints;i++){
+    if(onlyGround&&classArr&&classArr[i]!==CLASS_GROUND)continue;
+    const io=ptOffset+i*inSize;
+    const z=inDV.getInt32(io+8,true)*zScale+zOffset;
+    const x=inDV.getInt32(io+0,true)*xScale+xOffset;
+    const y=inDV.getInt32(io+4,true)*yScale+yOffset;
+    const col=Math.max(0,Math.min(gridW-1,Math.floor((x-minX)/cellSize)));
+    const row=Math.max(0,Math.min(gridH-1,Math.floor((y-minY)/cellSize)));
+    if(z<dtm[row*gridW+col])dtm[row*gridW+col]=z;
+  }
+  return dtm;
+}
+
+function gFillDTM(dtm,gridW,gridH){
+  // Multiple expansion passes to fill empty cells
+  for(let pass=0;pass<10;pass++){
+    let changed=false;
+    for(let r=0;r<gridH;r++)for(let c=0;c<gridW;c++){
+      if(isFinite(dtm[r*gridW+c]))continue;
+      let sum=0,cnt=0;
+      for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<gridH&&nc>=0&&nc<gridW&&isFinite(dtm[nr*gridW+nc])){sum+=dtm[nr*gridW+nc];cnt++;}}
+      if(cnt>0){dtm[r*gridW+c]=sum/cnt;changed=true;}
+    }
+    if(!changed)break;
+  }
+  return dtm;
+}
+
+function gSmoothDTM(dtm,gridW,gridH,passes){
+  let buf=new Float32Array(dtm.length);
+  for(let p=0;p<passes;p++){
+    for(let r=0;r<gridH;r++)for(let c=0;c<gridW;c++){
+      let sum=0,cnt=0;
+      for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<gridH&&nc>=0&&nc<gridW&&isFinite(dtm[nr*gridW+nc])){sum+=dtm[nr*gridW+nc];cnt++;}}
+      buf[r*gridW+c]=cnt>0?sum/cnt:dtm[r*gridW+c];
+    }
+    dtm.set(buf);
+  }
+  return dtm;
+}
+
+function gInterpDTM(dtm,gx,gy,gridW,gridH){
+  const x0=Math.max(0,Math.min(gridW-1,Math.floor(gx)));
+  const y0=Math.max(0,Math.min(gridH-1,Math.floor(gy)));
+  const x1=Math.min(x0+1,gridW-1),y1=Math.min(y0+1,gridH-1);
+  const fx=gx-Math.floor(gx),fy=gy-Math.floor(gy);
+  const v00=dtm[y0*gridW+x0],v10=dtm[y0*gridW+x1],v01=dtm[y1*gridW+x0],v11=dtm[y1*gridW+x1];
+  const finite=[v00,v10,v01,v11].filter(v=>isFinite(v));
+  if(finite.length===0)return 0;
+  if(!isFinite(v00)||!isFinite(v10)||!isFinite(v01)||!isFinite(v11))return finite.reduce((a,b)=>a+b)/finite.length;
+  return v00*(1-fx)*(1-fy)+v10*fx*(1-fy)+v01*(1-fx)*fy+v11*fx*fy;
+}
+
+// ── Surface build step (async, with progress) ──
+function gBuildSurface(cellSize,maxHeight,smoothPasses,iterations){
+  const h=gHeader;
+  const{ptOffset,ptFormat,ptRecLen,numPoints,xScale,yScale,zScale,xOffset,yOffset,zOffset,minX,minY,maxX,maxY}=h;
+  const inSize=FORMAT_SIZE[ptFormat]??ptRecLen;
+  const inDV=new DataView(gBuf);
+  const gridW=Math.max(2,Math.ceil((maxX-minX)/cellSize)+1);
+  const gridH=Math.max(2,Math.ceil((maxY-minY)/cellSize)+1);
+  const MAX_CELLS=4000000;
+  if(gridW*gridH>MAX_CELLS){setStatus('gStatusBox',`Grid too large (${fmtInt(gridW*gridH)} cells). Increase Cell Size.`,'error');document.getElementById('gRunBtn').disabled=false;return;}
+
+  setStatus('gStatusBox',`Building ${gridW}×${gridH} DTM surface…`,'processing');
+
+  // Build initial DTM from all points in chunks
+  const dtm=new Float32Array(gridW*gridH).fill(Infinity);
+  const CHUNK=100000;let proc=0;
+  function buildChunk(){
+    const end=Math.min(proc+CHUNK,numPoints);
+    for(let i=proc;i<end;i++){
+      const io=ptOffset+i*inSize;
+      const z=inDV.getInt32(io+8,true)*zScale+zOffset;
+      const x=inDV.getInt32(io+0,true)*xScale+xOffset;
+      const y=inDV.getInt32(io+4,true)*yScale+yOffset;
+      const col2=Math.max(0,Math.min(gridW-1,Math.floor((x-minX)/cellSize)));
+      const row2=Math.max(0,Math.min(gridH-1,Math.floor((y-minY)/cellSize)));
+      if(z<dtm[row2*gridW+col2])dtm[row2*gridW+col2]=z;
+    }
+    proc=end;
+    setBar('gSurfaceBar','gSurfacePct','gSurfaceTag',(proc/numPoints)*50,`Scanning ${fmtInt(proc)} / ${fmtInt(numPoints)} pts`,'active');
+    if(proc<numPoints){setTimeout(buildChunk,0);return;}
+    // Fill and smooth
+    gFillDTM(dtm,gridW,gridH);gSmoothDTM(dtm,gridW,gridH,smoothPasses);
+    setBar('gSurfaceBar','gSurfacePct','gSurfaceTag',100,'Done','done');
+    setStatus('gStatusBox','Classifying points…','processing');
+    setBar('gClassifyBar','gClassifyPct','gClassifyTag',0,'Starting…','active');
+    setTimeout(()=>gClassifyPoints(dtm,gridW,gridH,cellSize,maxHeight,smoothPasses,iterations,inDV,inSize,numPoints,ptOffset,h,1),30);
+  }
+  buildChunk();
+}
+
+// ── Classify points (chunked, iterative) ──
+function gClassifyPoints(dtm,gridW,gridH,cellSize,maxHeight,smoothPasses,iterations,inDV,inSize,numPoints,ptOffset,h,currentIter){
+  const{xScale,yScale,zScale,xOffset,yOffset,zOffset,minX,minY}=h;
+  const classArr=new Uint8Array(numPoints);
+  const CHUNK=80000;let proc=0;
+  function chunk(){
+    const end=Math.min(proc+CHUNK,numPoints);
+    for(let i=proc;i<end;i++){
+      const io=ptOffset+i*inSize;
+      const x=inDV.getInt32(io+0,true)*xScale+xOffset;
+      const y=inDV.getInt32(io+4,true)*yScale+yOffset;
+      const z=inDV.getInt32(io+8,true)*zScale+zOffset;
+      const gx=(x-minX)/cellSize,gy=(y-minY)/cellSize;
+      const surfZ=gInterpDTM(dtm,gx,gy,gridW,gridH);
+      classArr[i]=(z-surfZ<=maxHeight)?CLASS_GROUND:CLASS_UNCLASSIFIED;
+    }
+    proc=end;
+    const overallPct=((currentIter-1)/iterations*100)+(proc/numPoints/iterations*100);
+    setBar('gClassifyBar','gClassifyPct','gClassifyTag',overallPct,`Iter ${currentIter}/${iterations}: ${fmtInt(proc)} pts`,'active');
+    if(proc<numPoints){setTimeout(chunk,0);return;}
+    // Done with this iteration
+    if(currentIter<iterations){
+      // Rebuild DTM from ground points only and re-classify
+      setStatus('gStatusBox',`Refining surface (pass ${currentIter+1}/${iterations})…`,'processing');
+      setTimeout(()=>{
+        const dtm2=gBuildDTM(inDV,numPoints,ptOffset,inSize,h,classArr,true,gridW,gridH,cellSize);
+        gFillDTM(dtm2,gridW,gridH);gSmoothDTM(dtm2,gridW,gridH,smoothPasses);
+        gClassifyPoints(dtm2,gridW,gridH,cellSize,maxHeight,smoothPasses,iterations,inDV,inSize,numPoints,ptOffset,h,currentIter+1);
+      },30);
+    } else {
+      setBar('gClassifyBar','gClassifyPct','gClassifyTag',100,'Done','done');
+      gFinalizeClassification(classArr,inDV,inSize,numPoints,ptOffset,h);
     }
   }
+  chunk();
+}
+
+// ── Build output buffer + ground-only buffer ──
+function gFinalizeClassification(classArr,inDV,inSize,numPoints,ptOffset,h){
+  setStatus('gStatusBox','Building output & 3D preview…','processing');
+  const{ptFormat,ptRecLen,zScale,zOffset,minZ,maxZ,xScale,yScale,xOffset,yOffset}=h;
+  const safe_zR=(maxZ-minZ)<1e-9?1:(maxZ-minZ);
+  const outFmt=FORMAT_HAS_COLOR[ptFormat]?ptFormat:(FORMAT_UPGRADE[ptFormat]??ptFormat);
+  const inView=new Uint8Array(gBuf);
+  const outSize=FORMAT_SIZE[outFmt]??ptRecLen,rgbOff=FORMAT_RGB_OFF[outFmt];
+
+  let outBuf;try{outBuf=new ArrayBuffer(ptOffset+numPoints*outSize);}catch(e){setStatus('gStatusBox','Out of memory.','error');document.getElementById('gRunBtn').disabled=false;return;}
+  const outBytes=new Uint8Array(outBuf),outDV=new DataView(outBuf);
+  outBytes.set(inView.subarray(0,ptOffset));patchHeader(outDV,outFmt,outSize);
+
+  // Count ground, compute ground bounds
+  let gndCount=0;
+  let gminX=Infinity,gminY=Infinity,gminZ=Infinity,gmaxX=-Infinity,gmaxY=-Infinity,gmaxZ=-Infinity;
+  const step=numPoints>200000?Math.ceil(numPoints/200000):1;
+  const allXs=[],allYs=[],allZs=[],allCols=[];
+  const gndXs=[],gndYs=[],gndZs=[],gndCols=[];
+
+  for(let i=0;i<numPoints;i++){
+    const io=ptOffset+i*inSize,oo=ptOffset+i*outSize;
+    outBytes.set(inView.subarray(io,io+Math.min(inSize,outSize)),oo);
+    const rawZ=inDV.getInt32(io+8,true),realZ=rawZ*zScale+zOffset;
+    const t=(realZ-minZ)/safe_zR;
+    const isGround=classArr[i]===CLASS_GROUND;
+    const col=isGround?heightToRGB(t):{r:130,g:130,b:130};
+    if(rgbOff!==undefined){outDV.setUint16(oo+rgbOff,col.r*256,true);outDV.setUint16(oo+rgbOff+2,col.g*256,true);outDV.setUint16(oo+rgbOff+4,col.b*256,true);}
+    writeClass(outDV,oo,outFmt,classArr[i]);
+    if(isGround){
+      gndCount++;
+      const wx=inDV.getInt32(io+0,true)*xScale+xOffset,wy=inDV.getInt32(io+4,true)*yScale+yOffset;
+      if(wx<gminX)gminX=wx;if(wx>gmaxX)gmaxX=wx;if(wy<gminY)gminY=wy;if(wy>gmaxY)gmaxY=wy;if(realZ<gminZ)gminZ=realZ;if(realZ>gmaxZ)gmaxZ=realZ;
+    }
+    if(i%step===0){
+      const wx=inDV.getInt32(io+0,true)*xScale+xOffset,wy=inDV.getInt32(io+4,true)*yScale+yOffset;
+      allXs.push(wx);allYs.push(wy);allZs.push(realZ);allCols.push(col);
+      if(isGround){gndXs.push(wx);gndYs.push(wy);gndZs.push(realZ);gndCols.push(heightToRGB(t));}
+    }
+  }
+
+  gColorized=outBuf;gGndCount=gndCount;
+  gGndBounds={minX:gminX,maxX:gmaxX,minY:gminY,maxY:gmaxY,minZ:gminZ,maxZ:gmaxZ};
+  gPrevAll={xs:allXs,ys:allYs,zs:allZs,cols:allCols};
+  gPrevGnd={xs:gndXs,ys:gndYs,zs:gndZs,cols:gndCols};
+  gClassified=true;
+
+  // Build ground-only LAS
+  gGroundOnly=buildGroundOnlyLAS(inView,inDV,inSize,outFmt,outSize,rgbOff,ptOffset,numPoints,classArr,h,gndCount,gGndBounds,gminZ,gmaxZ,zScale,zOffset,minZ,safe_zR);
+
+  // Update stat cards
+  const pct=(gndCount/numPoints*100).toFixed(1);
+  document.getElementById('gStatGndPts').textContent=fmtInt(gndCount);
+  document.getElementById('gStatGndPct').textContent=pct+'%';
+
+  setStatus('gStatusBox',`Classification complete &nbsp;·&nbsp; ${fmtInt(gndCount)} ground / ${fmtInt(numPoints)} total (${pct}%)`,'success');
+
+  setTimeout(()=>{
+    document.getElementById('gColorLegend').classList.remove('hidden');document.getElementById('gLegendTitle').classList.remove('hidden');
+    document.getElementById('gPreviewWrap').classList.remove('hidden');document.getElementById('gPreviewTitle').classList.remove('hidden');
+    document.getElementById('gPreviewBelowControls').classList.remove('hidden');
+    document.getElementById('gNavTooltip').classList.remove('hidden');
+    document.getElementById('gPreviewControls').classList.remove('hidden');
+    const r3=initRenderer('threeCanvasGround',gOrbit,gDrag);gScene=r3.scene;gCamera=r3.camera;if(gRenderer)gRenderer.dispose();gRenderer=r3.renderer;
+    gPoints=buildPCGeometry(gScene,gOrbit,allXs,allYs,allZs,allCols,h,'g');
+    if(gAnimId)cancelAnimationFrame(gAnimId);gAnimId=makeRenderLoop(gScene,gOrbit,gCamera,gRenderer,'g')();
+    document.getElementById('gDownloadAllBtn').classList.remove('hidden');document.getElementById('gDownloadGndBtn').classList.remove('hidden');
+    document.getElementById('gRunBtn').disabled=false;
+    gSetLayer('all');
+  },40);
+}
+
+// ── Ground-only LAS builder ──
+function buildGroundOnlyLAS(inView,inDV,inSize,outFmt,outSize,rgbOff,ptOffset,numPoints,classArr,h,gndCount,gndBounds,gminZ,gmaxZ,zScale,zOffset,minZ,safe_zR){
+  if(gndCount===0)return null;
+  let buf;try{buf=new ArrayBuffer(ptOffset+gndCount*outSize);}catch(e){return null;}
+  const outBytes=new Uint8Array(buf),outDV=new DataView(buf);
+  outBytes.set(inView.subarray(0,ptOffset));patchHeader(outDV,outFmt,outSize);
+  // Update point count
+  if(gndCount<0x100000000){outDV.setUint32(107,gndCount,true);}else{outDV.setUint32(107,0,true);}
+  if(h.verMajor===1&&h.verMinor>=4){outDV.setUint32(247,gndCount&0xFFFFFFFF,true);outDV.setUint32(251,Math.floor(gndCount/0x100000000),true);}
+  // Zero out points-by-return
+  for(let i=0;i<5;i++)outDV.setUint32(111+i*4,0,true);
+  // Update bounding box (offsets 179-226)
+  outDV.setFloat64(179,gndBounds.maxX,true);outDV.setFloat64(187,gndBounds.minX,true);
+  outDV.setFloat64(195,gndBounds.maxY,true);outDV.setFloat64(203,gndBounds.minY,true);
+  outDV.setFloat64(211,gmaxZ,true);outDV.setFloat64(219,gminZ,true);
+  let outIdx=0;
+  for(let i=0;i<numPoints;i++){
+    if(classArr[i]!==CLASS_GROUND)continue;
+    const io=ptOffset+i*inSize,oo=ptOffset+outIdx*outSize;
+    outBytes.set(inView.subarray(io,io+Math.min(inSize,outSize)),oo);
+    const realZ=inDV.getInt32(io+8,true)*zScale+zOffset,t=(realZ-minZ)/safe_zR,col=heightToRGB(t);
+    if(rgbOff!==undefined){outDV.setUint16(oo+rgbOff,col.r*256,true);outDV.setUint16(oo+rgbOff+2,col.g*256,true);outDV.setUint16(oo+rgbOff+4,col.b*256,true);}
+    writeClass(outDV,oo,outFmt,CLASS_GROUND);
+    outIdx++;
+  }
+  return buf;
+}
+
+// ── Layer toggle ──
+function gSetLayer(layer){
+  gShowLayer=layer;
+  document.getElementById('gBtnAll').classList.toggle('active',layer==='all');
+  document.getElementById('gBtnGround').classList.toggle('active',layer==='ground');
+  if(!gScene||!gHeader)return;
+  const src=layer==='all'?gPrevAll:gPrevGnd;
+  if(!src)return;
+  gPoints=buildPCGeometry(gScene,gOrbit,src.xs,src.ys,src.zs,src.cols,gHeader,'g');
+}
+
+// ═══════════════════════════════════════════════════════════
+// FULLSCREEN
+// ═══════════════════════════════════════════════════════════
+function toggleFullscreen(wrapperId, btn) {
+  const el = document.getElementById(wrapperId);
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+  if (!isFs) {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) req.call(el);
+  } else {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    if (exit) exit.call(document);
+  }
+}
+
+function onFullscreenChange() {
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+  // Update all fullscreen button icons
+  document.querySelectorAll('.fullscreen-btn').forEach(btn => {
+    const expand   = btn.querySelector('.fs-expand');
+    const compress = btn.querySelector('.fs-compress');
+    const isThisFs = fsEl && btn.closest('.preview-container') === fsEl;
+    if (expand)   expand.style.display   = isThisFs ? 'none'  : '';
+    if (compress) compress.style.display = isThisFs ? ''      : 'none';
+  });
+  // Resize the active renderer after a short delay to let the browser settle
+  setTimeout(() => {
+    [{r:hRenderer,c:hCamera,w:'hPreviewWrap',cv:'threeCanvasHeight'},
+     {r:oRenderer,c:oCamera,w:'oPreviewWrap',cv:'threeCanvasOrtho'},
+     {r:gRenderer,c:gCamera,w:'gPreviewWrap',cv:'threeCanvasGround'}].forEach(({r,c,w,cv}) => {
+      if (!r) return;
+      const wrap = document.getElementById(w);
+      const W = wrap.clientWidth, H = wrap.clientHeight || 480;
+      r.setSize(W, H);
+      c.aspect = W / H;
+      c.updateProjectionMatrix();
+    });
+  }, 100);
+}
+
+document.addEventListener('fullscreenchange',       onFullscreenChange);
+document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+document.addEventListener('mozfullscreenchange',    onFullscreenChange);
+document.addEventListener('MSFullscreenChange',     onFullscreenChange);
+
+// ═══════════════════════════════════════════════════════════
+// POINT SIZE & AUTO-ROTATE CONTROLS
+// ═══════════════════════════════════════════════════════════
+function setPointSize(prefix, value) {
+  ptSizeMult[prefix] = parseFloat(value);
+  const pts = prefix==='h' ? hPoints : prefix==='o' ? oPoints : gPoints;
+  if (pts) pts.material.size = basePtSize[prefix] * ptSizeMult[prefix];
+}
+
+function toggleAutoRotate(prefix) {
+  autoRotate[prefix] = !autoRotate[prefix];
+  const track = document.getElementById(prefix + 'AutoRotateTrack');
+  if (track) track.classList.toggle('on', autoRotate[prefix]);
+}
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT  (shared for all modes)
+// ═══════════════════════════════════════════════════════════
+function startDownload(mode){
+  let buf,fname,btnId;
+  if(mode==='height')      {buf=hColorized;fname=hFilename.replace(/\.las$/i,'')+'_height_colored.las';btnId='hDownloadBtn';}
+  else if(mode==='ortho')  {buf=oColorized;fname=oLasFilename.replace(/\.las$/i,'')+'_ortho_colored.las';btnId='oDownloadBtn';}
+  else if(mode==='ground-all') {buf=gColorized;fname=gFilename.replace(/\.las$/i,'')+'_classified.las';btnId='gDownloadAllBtn';}
+  else if(mode==='ground-only'){buf=gGroundOnly;fname=gFilename.replace(/\.las$/i,'')+'_ground_only.las';btnId='gDownloadGndBtn';}
+  if(!buf)return;
+  const prefix=mode.startsWith('height')?'h':mode.startsWith('ortho')?'o':'g';
+  const blockId=prefix+'ExportBlock',barId=prefix+'ExportBar',pctId=prefix+'ExportPct',tagId=prefix+'ExportTag',sbId=prefix+'StatusBox';
+  document.getElementById(btnId).disabled=true;document.getElementById(blockId).classList.remove('hidden');
+  setBar(barId,pctId,tagId,0,'Starting…','active');setStatus(sbId,'Preparing download…','processing');
+  setTimeout(()=>doExport(buf,fname,barId,pctId,tagId,sbId,btnId),30);
+}
+
+async function doExport(buf,fname,barId,pctId,tagId,sbId,btnId){
+  const bytes=new Uint8Array(buf),total=bytes.length;
+  if(window.showSaveFilePicker){
+    try{
+      const handle=await window.showSaveFilePicker({suggestedName:fname,types:[{description:'LAS Point Cloud',accept:{'application/octet-stream':['.las']}}]});
+      const writable=await handle.createWritable();const CHUNK=1024*1024;let off=0;
+      while(off<total){const end=Math.min(off+CHUNK,total);await writable.write(bytes.subarray(off,end));off=end;setBar(barId,pctId,tagId,(off/total)*100,`Writing… ${formatBytes(off)} / ${formatBytes(total)}`,'active');}
+      await writable.close();setBar(barId,pctId,tagId,100,'Done','done');setStatus(sbId,`File saved &nbsp;·&nbsp; ${formatBytes(total)}`,'success');document.getElementById(btnId).disabled=false;return;
+    }catch(e){if(e.name==='AbortError'){setStatus(sbId,'Download cancelled.','info');document.getElementById(btnId).disabled=false;setBar(barId,pctId,tagId,0,'Cancelled','');return;}}
+  }
   const LIMIT=150*1024*1024;
-  if(total>LIMIT){setStatus(sbId,`File is ${formatBytes(total)} — too large for browser download. Use Chrome or Edge for direct file saving.`,'error');document.getElementById(btnId).disabled=false;setBar(barId,pctId,tagId,0,'Too large','');return;}
-  const CHUNK=3*16384;let b64='',offset=0;
+  if(total>LIMIT){setStatus(sbId,`File is ${formatBytes(total)} — too large. Use Chrome or Edge for direct file saving.`,'error');document.getElementById(btnId).disabled=false;setBar(barId,pctId,tagId,0,'Too large','');return;}
+  const CHUNK=3*16384;let b64='',off=0;
   function step(){
-    const end=Math.min(offset+CHUNK,total),slice=bytes.subarray(offset,end);
+    const end=Math.min(off+CHUNK,total),slice=bytes.subarray(off,end);
     let bin='';for(let i=0;i<slice.length;i++)bin+=String.fromCharCode(slice[i]);
-    b64+=btoa(bin);offset=end;
-    setBar(barId,pctId,tagId,(offset/total)*100,`Encoding… ${formatBytes(offset)} / ${formatBytes(total)}`,'active');
-    if(offset<total){setTimeout(step,0);return;}
+    b64+=btoa(bin);off=end;setBar(barId,pctId,tagId,(off/total)*100,`Encoding… ${formatBytes(off)} / ${formatBytes(total)}`,'active');
+    if(off<total){setTimeout(step,0);return;}
     setBar(barId,pctId,tagId,100,'Done','done');
-    try{const a=document.createElement('a');a.href='data:application/octet-stream;base64,'+b64;a.download=outName;document.body.appendChild(a);a.click();document.body.removeChild(a);setStatus(sbId,`Download started &nbsp;·&nbsp; ${formatBytes(total)}`,'success');}
+    try{const a=document.createElement('a');a.href='data:application/octet-stream;base64,'+b64;a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);setStatus(sbId,`Download started &nbsp;·&nbsp; ${formatBytes(total)}`,'success');}
     catch(e){setStatus(sbId,'Download failed: '+e.message,'error');}
     document.getElementById(btnId).disabled=false;
   }
   step();
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // RESET
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+const LAS_DROPZONE_HTML = (stroke='#F46F29') => `<div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="6" width="44" height="40" rx="4" stroke="${stroke}" stroke-width="2"/><path d="M16 26L26 16l10 10" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 16v20" stroke="${stroke}" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="14" r="2.5" fill="${stroke}" opacity="0.35"/><circle cx="40" cy="40" r="2.5" fill="${stroke}" opacity="0.35"/></svg></div>`;
+
 function resetMode(mode){
   if(mode==='height'){
     if(hRenderer){cancelAnimationFrame(hAnimId);hRenderer.dispose();hRenderer=null;}
-    hBuffer=null;hColorized=null;hHeader=null;hFilename='';
-    hPreviewXs=[];hPreviewYs=[];hPreviewZs=[];hUserMinZ=null;hUserMaxZ=null;
-    clearTimeout(hRecolorizeTimer);
-    document.getElementById('heightPanel').classList.add('hidden');
-    document.getElementById('hExportBlock').classList.add('hidden');
-    document.getElementById('hSliderSection').classList.add('hidden');
-    document.getElementById('hRecolorizeBadge').classList.add('hidden');
-    // Reset drop zone
-    const dz=document.getElementById('dropZoneHeight');
-    dz.classList.remove('has-file');
-    dz.innerHTML=`<div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/><path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="14" r="2.5" fill="#F46F29" opacity="0.35"/><circle cx="40" cy="40" r="2.5" fill="#F46F29" opacity="0.35"/></svg></div><div class="drop-title">Drop your <span>.las</span> file here</div><div class="drop-sub">or click to browse &nbsp;·&nbsp; LAS 1.0–1.4 &nbsp;·&nbsp; Point formats 0–10</div><input type="file" id="fileInputHeight" accept=".las">`;
-    setupDropZone('dropZoneHeight','fileInputHeight',f=>handleHeightFile(f));
-    document.getElementById('hStatusBox').innerHTML='';
-  } else {
+    hBuf=null;hColorized=null;hHeader=null;hFilename='';hPxs=[];hPys=[];hPzs=[];hUserMinZ=null;hUserMaxZ=null;clearTimeout(hRecolorizeTimer);
+    document.getElementById('heightPanel').classList.add('hidden');document.getElementById('hExportBlock').classList.add('hidden');document.getElementById('hSliderSection').classList.add('hidden');document.getElementById('hRecolorizeBadge').classList.add('hidden');document.getElementById('hPreviewBelowControls').classList.add('hidden');document.getElementById('hNavTooltip').classList.add('hidden');document.getElementById('hStatusBox').innerHTML='';
+    const dz=document.getElementById('dropZoneHeight');dz.classList.remove('has-file');
+    dz.innerHTML=LAS_DROPZONE_HTML()+'<div class="drop-title">Drop your <span>.las</span> file here</div><div class="drop-sub">or click to browse &nbsp;·&nbsp; LAS 1.0–1.4 &nbsp;·&nbsp; Point formats 0–10</div><input type="file" id="fileInputHeight" accept=".las">';
+    setupDZ('dropZoneHeight','fileInputHeight',f=>handleHeightFile(f));
+  } else if(mode==='ortho'){
     if(oRenderer){cancelAnimationFrame(oAnimId);oRenderer.dispose();oRenderer=null;}
-    oLasBuffer=null;oTifBuffer=null;oColorized=null;oHeader=null;oLasFilename='';oTifFilename='';
-    oLasReady=false;oTifReady=false;
-    document.getElementById('orthoPanel').classList.add('hidden');
-    document.getElementById('oExportBlock').classList.add('hidden');
-    // Reset both drop zones
-    const lz=document.getElementById('dropZoneOrthoLas');
-    lz.classList.remove('has-file');
-    lz.innerHTML=`<div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="6" width="44" height="40" rx="4" stroke="#F46F29" stroke-width="2"/><path d="M16 26L26 16l10 10" stroke="#F46F29" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 16v20" stroke="#F46F29" stroke-width="2" stroke-linecap="round"/></svg></div><div class="drop-title"><span>.las</span> file</div><div class="drop-sub">Point cloud input</div><input type="file" id="fileInputOrthoLas" accept=".las">`;
-    const tz=document.getElementById('dropZoneOrthoTif');
-    tz.classList.remove('has-file');
-    tz.innerHTML=`<div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="4" width="44" height="44" rx="4" stroke="#00796b" stroke-width="2"/><rect x="10" y="10" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/><rect x="28" y="10" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/><rect x="10" y="28" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/><rect x="28" y="28" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/></svg></div><div class="drop-title"><span style="color:var(--teal)">.tif</span> file</div><div class="drop-sub">GeoTIFF orthomosaic (RGB)</div><input type="file" id="fileInputOrthoTif" accept=".tif,.tiff">`;
-    setupDropZone('dropZoneOrthoLas','fileInputOrthoLas',f=>handleOrthoLas(f));
-    setupDropZone('dropZoneOrthoTif','fileInputOrthoTif',f=>handleOrthoTif(f));
-    document.getElementById('oStatusBox').innerHTML='';
-    setBar('oLasBar','oLasPct','oLasTag',0,'Waiting','');
-    setBar('oTifBar','oTifPct','oTifTag',0,'Waiting','');
-    setBar('oDecodeBar','oDecodePct','oDecodeTag',0,'Waiting','');
-    setBar('oSampleBar','oSamplePct','oSampleTag',0,'Waiting','');
+    oLasBuf=null;oTifBuf=null;oColorized=null;oHeader=null;oLasFilename='';oTifFilename='';oLasReady=false;oTifReady=false;
+    document.getElementById('orthoPanel').classList.add('hidden');document.getElementById('oExportBlock').classList.add('hidden');document.getElementById('oPreviewBelowControls').classList.add('hidden');document.getElementById('oNavTooltip').classList.add('hidden');document.getElementById('oStatusBox').innerHTML='';
+    ['oLasBar','oTifBar','oDecodeBar','oSampleBar'].forEach((b,i)=>setBar(b,['oLasPct','oTifPct','oDecodePct','oSamplePct'][i],['oLasTag','oTifTag','oDecodeTag','oSampleTag'][i],0,'Waiting',''));
+    const lz=document.getElementById('dropZoneOrthoLas');lz.classList.remove('has-file');
+    lz.innerHTML=LAS_DROPZONE_HTML()+'<div class="drop-title"><span>.las</span> file</div><div class="drop-sub">Point cloud input</div><input type="file" id="fileInputOrthoLas" accept=".las">';
+    const tz=document.getElementById('dropZoneOrthoTif');tz.classList.remove('has-file');
+    tz.innerHTML='<div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="4" width="44" height="44" rx="4" stroke="#00796b" stroke-width="2"/><rect x="10" y="10" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/><rect x="28" y="10" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/><rect x="10" y="28" width="14" height="14" fill="#F46F29" opacity="0.3" rx="1"/><rect x="28" y="28" width="14" height="14" fill="#00796b" opacity="0.3" rx="1"/></svg></div><div class="drop-title"><span style="color:var(--teal)">.tif</span> file</div><div class="drop-sub">GeoTIFF orthomosaic (RGB)</div><input type="file" id="fileInputOrthoTif" accept=".tif,.tiff">';
+    setupDZ('dropZoneOrthoLas','fileInputOrthoLas',f=>handleOrthoLas(f));
+    setupDZ('dropZoneOrthoTif','fileInputOrthoTif',f=>handleOrthoTif(f));
+  } else if(mode==='ground'){
+    if(gRenderer){cancelAnimationFrame(gAnimId);gRenderer.dispose();gRenderer=null;}
+    gBuf=null;gColorized=null;gGroundOnly=null;gHeader=null;gFilename='';gGndCount=0;gGndBounds=null;gPrevAll=null;gPrevGnd=null;gFileLoaded=false;gClassified=false;
+    document.getElementById('groundPanel').classList.add('hidden');document.getElementById('gExportBlock').classList.add('hidden');document.getElementById('gPreviewBelowControls').classList.add('hidden');document.getElementById('gNavTooltip').classList.add('hidden');document.getElementById('gStatusBox').innerHTML='';
+    document.getElementById('gRunBtn').disabled=false;
+    ['gImportBar','gSurfaceBar','gClassifyBar'].forEach((b,i)=>setBar(b,['gImportPct','gSurfacePct','gClassifyPct'][i],['gImportTag','gSurfaceTag','gClassifyTag'][i],0,'Waiting',''));
+    const dz=document.getElementById('dropZoneGround');dz.classList.remove('has-file');
+    dz.innerHTML='<div class="drop-icon"><svg viewBox="0 0 52 52" fill="none"><rect x="4" y="6" width="44" height="40" rx="4" stroke="#2e7d32" stroke-width="2"/><path d="M4 36 Q14 24 26 28 Q38 32 48 20" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="14" cy="30" r="2" fill="#2e7d32" opacity="0.5"/><circle cx="26" cy="28" r="2" fill="#2e7d32" opacity="0.7"/><circle cx="38" cy="24" r="2" fill="#2e7d32" opacity="0.5"/></svg></div><div class="drop-title">Drop your <span style="color:var(--green)">.las</span> file here</div><div class="drop-sub">or click to browse &nbsp;·&nbsp; LAS 1.0–1.4 &nbsp;·&nbsp; Point formats 0–10</div><input type="file" id="fileInputGround" accept=".las">';
+    setupDZ('dropZoneGround','fileInputGround',f=>handleGroundFile(f));
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // RESIZE
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 window.addEventListener('resize',()=>{
-  if(hRenderer){const w=document.getElementById('hPreviewWrap');hRenderer.setSize(w.clientWidth,w.clientHeight||480);hCamera.aspect=w.clientWidth/(w.clientHeight||480);hCamera.updateProjectionMatrix();}
-  if(oRenderer){const w=document.getElementById('oPreviewWrap');oRenderer.setSize(w.clientWidth,w.clientHeight||480);oCamera.aspect=w.clientWidth/(w.clientHeight||480);oCamera.updateProjectionMatrix();}
+  [{r:hRenderer,c:hCamera,w:'hPreviewWrap'},{r:oRenderer,c:oCamera,w:'oPreviewWrap'},{r:gRenderer,c:gCamera,w:'gPreviewWrap'}].forEach(({r,c,w})=>{
+    if(!r)return;const el=document.getElementById(w);const W=el.clientWidth,H=el.clientHeight||480;r.setSize(W,H);c.aspect=W/H;c.updateProjectionMatrix();
+  });
 });
 </script>
 </body>
