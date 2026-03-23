@@ -1,97 +1,82 @@
-# WingtraLIDAR Colorizer & Classifier Beta
+# WingtraLIDAR Point Cloud Tool — Beta v5.6
 
-A browser-based point cloud processing tool for `.las` files.  
-All processing runs **100% locally** — no data is ever uploaded to any server.
-
----
-
-## Three Modes
-
-### 🏔️ Height Colorizer
-Colorize each point by its Z value using a 7-stop gradient (deep blue → cyan → green → yellow → orange → red).
-- Drag & drop a `.las` file
-- Automatic Z-range detection from LAS header
-- Manual Min Z / Max Z sliders to fine-tune the color range
-- Interactive 3D preview with orbit, zoom, pan, auto-rotate, and point size control
-
-### 📷 Ortho Colorizer
-Project true RGB colors from a GeoTIFF orthomosaic onto each point using its XY coordinates.
-- Drag & drop a `.las` and a `.tif` — processing starts automatically when both are loaded
-- Handles uint8 and uint16 GeoTIFFs
-- Both files must share the same CRS (coordinate reference system)
-
-### 🗺️ Ground Classifier
-Detect ground points using a progressive grid-based DTM algorithm, apply height colorization, and export.
-- Tune 4 parameters: Grid Cell Size, Max Ground Thickness, Surface Smoothness, Accuracy Passes
-- Ground points (Class 2): colored by height gradient
-- Non-ground points (Class 1): neutral gray
-- Two exports: all points with classification, or ground-only `.las`
+Browser-based LiDAR point cloud processing. All computation runs **100% locally** in the browser — no data is uploaded to any server.
 
 ---
 
-## 3D Viewer Controls
+## Workflow
 
-| Input | Action |
+| Step | All Tools | Ground Classifier only |
+|---|---|---|
+| **1** | Open Point Cloud | Open Point Cloud |
+| **2** | Select Tool | Select Tool |
+| **3** | Review Results | Review Results |
+| **4** | Export Deliverables | Create Deliverables (TIN / future) |
+| **5** | — | Export Deliverables |
+
+---
+
+## Tools
+
+| Tool | Description | Output |
+|---|---|---|
+| 👁️ **Viewer** | 3D view with All Points / Ground Only / RGB layer switching | — |
+| 🏔️ **Height Colorizer** | Colorize by Z value with adjustable min/max range | Colorized `.las` |
+| 🗺️ **Ground Classifier** | Progressive DTM-based ground detection with TIN generation | Classified `.las` + Ground-only `.las` + TIN mesh |
+| 📷 **Ortho Colorizer** | Project RGB from a GeoTIFF orthomosaic onto each point | Colorized RGB `.las` |
+
+---
+
+## TIN Export Formats
+
+Available after Ground Classifier → Create Deliverables → TIN Model:
+
+| Format | Use case |
 |---|---|
-| Drag | Rotate |
-| Scroll | Zoom |
-| Shift + Drag | Pan |
-| View buttons | Snap to 3D / Top / Front / Side |
-| Point Size slider | Adjust point size |
-| Auto Rotate toggle | Toggle slow rotation |
-| ⤢ button | Fullscreen |
-
----
-
-## LAS Support
-
-LAS 1.0–1.4, point formats 0–10. Formats without RGB are automatically upgraded (0→2, 1→3, 4→5, 6→8, 9→10). LAS Classification byte written per spec.
-
----
-
-## Large File Downloads
-
-- **Chrome / Edge 86+** — File System Access API, streams directly to disk, no size limit
-- **Firefox / Safari** — Base64 data URI, up to ~150 MB
+| `.OBJ` | Blender, Rhino, universal 3D / CAD |
+| `.STL` | 3D printing, CAD simulation |
+| `.PLY` | CloudCompare, point cloud / mesh tools |
+| `.DXF` | AutoCAD, Civil3D, survey software |
+| `.GeoJSON` | QGIS, Mapbox, web GIS |
 
 ---
 
 ## Tech Stack
 
-- Vanilla HTML / CSS / JavaScript — no framework, no build step
-- [Three.js r128](https://threejs.org/) — 3D point cloud preview
-- [GeoTIFF.js 2.1.3](https://geotiffjs.github.io/) — GeoTIFF parsing (Ortho mode)
+- **Vanilla HTML/CSS/JS** — no build step, single file app
+- **Three.js r128** — 3D point cloud and TIN preview
+- **GeoTIFF.js 2.1.3** — raster decoding for ortho colorization
+- **File System Access API** — large file exports in Chrome/Edge (no size cap)
+- **Base64 fallback** — export in other browsers (up to 150 MB)
 
 ---
 
-## Local Usage
+## Deploy
+
+### Local
+Open `index.html` directly in Chrome or Edge — no server needed.
+
+### Vercel
+1. Push repo to GitHub
+2. Import at [vercel.com](https://vercel.com) and click **Deploy**
+3. `vercel.json` sets the required `Cross-Origin-Opener-Policy` header for the File System Access API
 
 ```bash
-# Open directly — no server needed
-open index.html
-
-# Or serve locally
-npx serve .
+git add .
+git commit -m "WingtraLIDAR Point Cloud Tool v5.6"
+git push
 ```
 
-## Deployment (Vercel)
-
-1. Push this repo to GitHub
-2. Go to [vercel.com](https://vercel.com) → **Add New Project** → import the repo
-3. Click **Deploy** — no configuration needed
-
-Every `git push` to `main` triggers an automatic redeploy.
+Auto-redeploys on every push.
 
 ---
 
-## File Structure
+## Supported LAS Formats
 
-```
-├── index.html    ← full application (~100 KB, single file)
-├── vercel.json   ← COOP header required for File System Access API
-└── README.md
-```
+- LAS 1.0 – 1.4
+- Point formats 0 – 10
+- Large files (LAS 1.4 64-bit point count)
 
 ---
 
-MIT License
+*All processing runs locally in your browser. No data is uploaded to any server.*
