@@ -236,13 +236,6 @@ canvas.c3:active{cursor:grabbing}
 .btn-primary:hover:not(:disabled){background:var(--orange-dim);transform:translateY(-1px);box-shadow:0 4px 14px rgba(244,111,41,0.4)}
 .btn-primary:disabled{opacity:0.45;cursor:not-allowed;transform:none;box-shadow:none}
 
-/* TIN export format buttons */
-.fmt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:4px}
-.fmt-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg2);cursor:pointer;transition:all 0.2s;font-family:var(--font-mono)}
-.fmt-btn:hover:not(:disabled){border-color:var(--orange);background:var(--orange-lt);transform:translateY(-1px)}
-.fmt-btn:disabled{opacity:0.35;cursor:not-allowed;transform:none}
-.fmt-ext{font-size:14px;font-weight:700;color:var(--text);letter-spacing:0.04em}
-.fmt-desc{font-size:9px;color:var(--text3);text-align:center;line-height:1.4}
 
 .hidden{display:none!important}
 footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;font-family:var(--font-mono);color:var(--text3);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
@@ -265,7 +258,7 @@ footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);font-
     </svg>
   </div>
   <h1>Wingtra<span class="accent">LIDAR</span> Point Cloud Tool<span class="beta">Beta</span></h1>
-  <div class="version-badge">v5.6</div>
+  <div class="version-badge">v5.9</div>
 </header>
 
 <!-- ==============================
@@ -354,7 +347,7 @@ footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);font-
       <div class="mode-card" id="mcGround" onclick="pickMode('ground')">
         <span class="mode-emoji">&#128506;&#65039;</span>
         <h3>Ground Classifier</h3>
-        <p>Detect ground points, generate a TIN surface model and export.</p>
+        <p>Detect ground points. Export classified and ground-only .las files.</p>
       </div>
       <div class="mode-card" id="mcOrtho" onclick="pickMode('ortho')">
         <span class="mode-emoji">&#128247;</span>
@@ -527,103 +520,16 @@ footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);font-
   </div>
 </div>
 
-<div class="step-connector" id="conn34"></div>
 
 <!-- ==============================
-     STEP 4 - Create Deliverables (TIN — Ground Classifier only)
+     STEP 4 - Export Deliverables
      ============================== -->
 <div class="step-block pending" id="sb4">
   <div class="step-header">
     <div class="step-num">4</div>
     <div class="step-titles">
-      <div class="step-title">Create Deliverables</div>
-      <div class="step-sub" id="s4sub">Generate a TIN surface model from the classified ground points</div>
-    </div>
-    <div class="step-icon">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="10,2 18,16 2,16"/>
-        <line x1="10" y1="2" x2="10" y2="16"/>
-        <line x1="2" y1="16" x2="18" y2="16"/>
-      </svg>
-    </div>
-  </div>
-  <div class="step-body" id="s4body">
-
-    <!-- Deliverable type selector -->
-    <div class="mode-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:0">
-      <div class="mode-card" id="d4Tin" onclick="pickDeliverable('tin')">
-        <span class="mode-emoji">&#128314;</span>
-        <h3>TIN Model</h3>
-        <p>Triangulated Irregular Network surface from classified ground points.</p>
-      </div>
-      <div class="mode-card" id="d4P1" style="opacity:0.45;cursor:not-allowed">
-        <span class="mode-emoji">&#128280;</span>
-        <h3>Placeholder 1</h3>
-        <p>Coming soon.</p>
-      </div>
-      <div class="mode-card" id="d4P2" style="opacity:0.45;cursor:not-allowed">
-        <span class="mode-emoji">&#128281;</span>
-        <h3>Placeholder 2</h3>
-        <p>Coming soon.</p>
-      </div>
-    </div>
-
-    <!-- TIN config (revealed when TIN Model selected) -->
-    <div class="hidden" id="cfgTinD" style="margin-top:20px">
-      <div class="sec">TIN Settings</div>
-      <div class="param-grid" style="grid-template-columns:1fr">
-        <div class="param-card">
-          <div class="param-lbl">Grid Cell Size</div>
-          <div class="param-row"><input type="range" id="tinCell" min="0.5" max="20" step="0.5" value="2"><span class="param-val" id="tinCellV">2.0 m</span></div>
-          <div class="param-desc">Down = more detail, slower. Up = coarser mesh, faster.<br><em>1-3 m for detailed terrain, 5-10 m for overview.</em></div>
-        </div>
-      </div>
-      <button class="btn btn-primary" id="tinRunBtn" onclick="runTIN()">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 2l8 5-8 5V2z" fill="currentColor"/></svg>
-        Generate TIN
-      </button>
-    </div>
-
-    <div class="hidden" id="tinProgressWrap" style="margin-top:20px">
-      <div class="sec">Progress</div>
-      <div class="pb"><div class="ph"><div class="pn"><span>Extract Points</span><span class="tag" id="tinExtTag">Waiting</span></div><div class="pp" id="tinExtPct">0%</div></div><div class="pt"><div class="pf c1" id="tinExtBar"></div></div></div>
-      <div class="pb"><div class="ph"><div class="pn"><span>Build TIN</span><span class="tag" id="tinBldTag">Waiting</span></div><div class="pp" id="tinBldPct">0%</div></div><div class="pt"><div class="pf c8" id="tinBldBar"></div></div></div>
-      <div id="tinStatus"></div>
-    </div>
-
-    <div class="hidden" id="resTin" style="margin-top:20px">
-      <div class="sec">Mesh Statistics</div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-lbl">Vertices</div><div class="stat-val accent" id="tinVerts">-</div></div>
-        <div class="stat-card"><div class="stat-lbl">Triangles</div><div class="stat-val accent" id="tinTris">-</div></div>
-        <div class="stat-card"><div class="stat-lbl">Area (m2)</div><div class="stat-val" id="tinArea">-</div></div>
-        <div class="stat-card"><div class="stat-lbl">Min Z</div><div class="stat-val" id="tinMinZ">-</div></div>
-        <div class="stat-card"><div class="stat-lbl">Max Z</div><div class="stat-val" id="tinMaxZ">-</div></div>
-        <div class="stat-card"><div class="stat-lbl">Z Range</div><div class="stat-val" id="tinZRange">-</div></div>
-      </div>
-      <div class="sec">3D TIN Preview</div>
-      <div class="preview-wrap" id="tinWrap"><canvas id="cvT" class="c3"></canvas><button class="fs-btn" onclick="goFS('tinWrap',this)"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" class="fse"/><path d="M5 1v4H1M13 5H9V1M9 13v-4h4M1 9h4v4" class="fsc" style="display:none"/></svg></button></div>
-      <div class="below-bar" id="tinBelowBar">
-        <div style="display:flex;gap:4px"><button class="vbtn active" id="tb3d" onclick="vm('t','3d')">3D</button><button class="vbtn" id="tbTop" onclick="vm('t','top')">Top</button><button class="vbtn" id="tbFront" onclick="vm('t','front')">Front</button><button class="vbtn" id="tbSide" onclick="vm('t','side')">Side</button></div>
-        <div class="bdiv"></div><div class="tog-wrap" onclick="tinWireToggle()"><div class="tog-track" id="tinWireTog"><div class="tog-thumb"></div></div><span class="tog-lbl">Wireframe</span></div>
-        <div class="bdiv"></div><div class="tog-wrap" onclick="togRot('t')"><div class="tog-track on" id="ttog"><div class="tog-thumb"></div></div><span class="tog-lbl">Auto Rotate</span></div>
-      </div>
-      <div class="nav-tip"><div class="nav-item"><span class="key">Drag</span><span>Rotate</span></div><div class="nav-item"><span class="key">Scroll</span><span>Zoom</span></div><div class="nav-item"><span class="key">Shift</span><span>+</span><span class="key">Drag</span><span>Pan</span></div></div>
-    </div>
-  </div>
-</div>
-
-<div class="step-connector" id="conn45"></div>
-
-<!-- ==============================
-     STEP 5 - Export Deliverables
-     ============================== -->
-<div class="step-block pending" id="sb5">
-  <div class="step-header">
-    <div class="step-num">5</div>
-    <div class="step-titles">
       <div class="step-title">Export Deliverables</div>
-      <div class="step-sub" id="s5sub">Download processed files</div>
+      <div class="step-sub" id="s4sub">Download processed files</div>
     </div>
     <div class="step-icon">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -672,20 +578,6 @@ footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);font-
       <div id="oExpStatus"></div>
     </div>
 
-    <!-- TIN export -->
-    <div class="hidden" id="expTin">
-      <div class="sec">TIN Generator</div>
-      <div class="fmt-grid">
-        <button class="fmt-btn" onclick="exportTIN('obj')"><span class="fmt-ext">.OBJ</span><span class="fmt-desc">Wavefront OBJ<br>3D / CAD universal</span></button>
-        <button class="fmt-btn" onclick="exportTIN('stl')"><span class="fmt-ext">.STL</span><span class="fmt-desc">Sterolithography<br>3D printing / CAD</span></button>
-        <button class="fmt-btn" onclick="exportTIN('ply')"><span class="fmt-ext">.PLY</span><span class="fmt-desc">Stanford PLY<br>CloudCompare</span></button>
-        <button class="fmt-btn" onclick="exportTIN('dxf')"><span class="fmt-ext">.DXF</span><span class="fmt-desc">AutoCAD DXF<br>Civil3D / survey</span></button>
-        <button class="fmt-btn" onclick="exportTIN('geojson')"><span class="fmt-ext">.GeoJSON</span><span class="fmt-desc">GeoJSON<br>QGIS / Web GIS</span></button>
-      </div>
-      <div class="pb hidden" id="tinExpPb" style="margin-top:14px;margin-bottom:0"><div class="ph"><div class="pn"><span>Exporting TIN</span><span class="tag" id="tinExpTag">Waiting</span></div><div class="pp" id="tinExpPct">0%</div></div><div class="pt"><div class="pf cex" id="tinExpBar"></div></div></div>
-      <div id="tinExpStatus"></div>
-    </div>
-
   </div>
 </div>
 
@@ -712,17 +604,16 @@ let G={buf:null,hdr:null,fn:'',fsz:0};
 let hOut=null,gOut=null,gGndOnly=null,oOut=null,oTifBuf=null;
 let hPxs=[],hPys=[],hPzs=[],hUMin=null,hUMax=null,hRetimer=null;
 let gPrevAll=null,gPrevGnd=null,gGndCnt=0;
-let tinV=null,tinF=null,tinMesh3d=null,tinWireMode=false,tinSrcMode='ground';
 let vData={all:null,ground:null,rgb:null};
 
 // Three.js
 const R={},SC={},CAM={},PT={},AID={};
-const ORB={v:{theta:-.5,phi:1,radius:3,panX:0,panY:0},h:{theta:-.5,phi:1,radius:3,panX:0,panY:0},g:{theta:-.5,phi:1,radius:3,panX:0,panY:0},o:{theta:-.5,phi:1,radius:3,panX:0,panY:0},t:{theta:-.5,phi:1,radius:3,panX:0,panY:0}};
-const DRG={v:{d:false,x:0,y:0},h:{d:false,x:0,y:0},g:{d:false,x:0,y:0},o:{d:false,x:0,y:0},t:{d:false,x:0,y:0}};
-const AR={v:true,h:true,g:true,o:true,t:true};
-const PSM={v:1,h:1,g:1,o:1,t:1},BPS={v:.006,h:.006,g:.006,o:.006,t:.006};
-const WPS={v:'vWrap',h:'hWrap',g:'gWrap',o:'oWrap',t:'tinWrap'};
-const CVS={v:'cvV',h:'cvH',g:'cvG',o:'cvO',t:'cvT'};
+const ORB={v:{theta:-.5,phi:1,radius:3,panX:0,panY:0},h:{theta:-.5,phi:1,radius:3,panX:0,panY:0},g:{theta:-.5,phi:1,radius:3,panX:0,panY:0},o:{theta:-.5,phi:1,radius:3,panX:0,panY:0}};
+const DRG={v:{d:false,x:0,y:0},h:{d:false,x:0,y:0},g:{d:false,x:0,y:0},o:{d:false,x:0,y:0}};
+const AR={v:true,h:true,g:true,o:true};
+const PSM={v:1,h:1,g:1,o:1},BPS={v:.006,h:.006,g:.006,o:.006};
+const WPS={v:'vWrap',h:'hWrap',g:'gWrap',o:'oWrap'};
+const CVS={v:'cvV',h:'cvH',g:'cvG',o:'cvO'};
 const VMAP={v:{'3d':'vb3d',top:'vbTop',front:'vbFront',side:'vbSide'},h:{'3d':'hb3d',top:'hbTop',front:'hbFront',side:'hbSide'},g:{'3d':'gb3d',top:'gbTop',front:'gbFront',side:'gbSide'},o:{'3d':'ob3d',top:'obTop',front:'obFront',side:'obSide'},t:{'3d':'tb3d',top:'tbTop',front:'tbFront',side:'tbSide'}};
 
 // Helpers
@@ -809,18 +700,18 @@ function resetAll(){
   Object.keys(R).forEach(k=>{if(R[k]){cancelAnimationFrame(AID[k]);R[k].dispose();delete R[k];delete SC[k];delete CAM[k];delete PT[k];}});
   G={buf:null,hdr:null,fn:'',fsz:0};hOut=null;gOut=null;gGndOnly=null;oOut=null;oTifBuf=null;
   hPxs=[];hPys=[];hPzs=[];hUMin=null;hUMax=null;clearTimeout(hRetimer);
-  gPrevAll=null;gPrevGnd=null;gGndCnt=0;tinV=null;tinF=null;tinMesh3d=null;tinWireMode=false;tinSrcMode='ground';
+  gPrevAll=null;gPrevGnd=null;gGndCnt=0;
   vData={all:null,ground:null,rgb:null};
   // Reset all steps (5 possible)
   [1,2,3,4,5].forEach(n=>setStep(n,n===1?'active':'pending'));
   ['s1sub','s2sub','s3sub','s4sub','s5sub'].forEach(function(id,i){
     var el=document.getElementById(id);if(!el)return;
-    var defaults=['Drop or select a .las file to begin','Choose what you want to do with the point cloud','Processing output and 3D preview','Generate a TIN surface model from the classified ground points','Download processed files'];
+    var defaults=['Drop or select a .las file to begin','Choose what you want to do with the point cloud','Processing output and 3D preview','Download processed files'];
     el.textContent=defaults[i];
   });
   document.getElementById('s1status').innerHTML='';document.getElementById('s3status').innerHTML='';
-  ['resViewer','resHeight','resGround','resOrtho','resTin','expHeight','expGround','expOrtho','expTin'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  ['pb2','pb3','pb4','toolConfig','cfgGround','cfgOrtho','cfgTinD'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  ['resViewer','resHeight','resGround','resOrtho','expHeight','expGround','expOrtho'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  ['pb2','pb3','pb4','toolConfig','cfgGround','cfgOrtho'].forEach(id=>document.getElementById(id).classList.add('hidden'));
   ['hRecolorBadge','vLegWrap','vLayerWrap','hExpPb','gExpPb','oExpPb','tinExpPb','tinProgressWrap'].forEach(id=>{var el=document.getElementById(id);if(el)el.classList.add('hidden');});
   ['mcViewer','mcHeight','mcGround','mcOrtho','d4Tin'].forEach(id=>document.getElementById(id).classList.remove('active'));
   bar('p1bar','p1pct','p1tag',0,'Waiting','');
@@ -836,7 +727,6 @@ function resetAll(){
     document.getElementById(vId).textContent=(id==='gCell'?v.toFixed(1)+' m':id==='gMaxH'?v.toFixed(2)+' m':String(v));
   });
 });
-document.getElementById('tinCell').addEventListener('input',e=>{document.getElementById('tinCellV').textContent=parseFloat(e.target.value).toFixed(1)+' m';});
 
 function pickMode(mode){
   ['mcViewer','mcHeight','mcGround','mcOrtho'].forEach(id=>document.getElementById(id).classList.remove('active'));
@@ -848,11 +738,7 @@ function pickMode(mode){
   document.getElementById('s3status').innerHTML='';
   // Hide/reset step 4 (TIN) and step 5 (export) for non-ground modes
   if(mode!=='ground'){
-    setStep(4,'pending');setStep(5,'pending');
-    ['resTin','expGround','expTin'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-    var tinPw=document.getElementById('tinProgressWrap');if(tinPw)tinPw.classList.add('hidden');
-    document.getElementById('tinRunBtn').disabled=false;
-    bar('tinExtBar','tinExtPct','tinExtTag',0,'Waiting','');
+            bar('tinExtBar','tinExtPct','tinExtTag',0,'Waiting','');
     bar('tinBldBar','tinBldPct','tinBldTag',0,'Waiting','');
   }
   // Tool configs
@@ -865,15 +751,6 @@ function pickMode(mode){
   else if(mode==='height'){markStepDone(2,'Height Colorizer selected');activateStep(3);startHeight();}
 }
 
-function pickDeliverable(type){
-  ['d4Tin'].forEach(id=>document.getElementById(id).classList.remove('active'));
-  document.getElementById('cfgTinD').classList.add('hidden');
-  if(type==='tin'){
-    document.getElementById('d4Tin').classList.add('active');
-    document.getElementById('cfgTinD').classList.remove('hidden');
-  }
-}
-
 // THREE.JS
 function applyVM(o,m){o.panX=0;o.panY=0;if(m==='3d'){o.theta=-.5;o.phi=1;}if(m==='top'){o.theta=0;o.phi=.01;}if(m==='front'){o.theta=0;o.phi=Math.PI/2;}if(m==='side'){o.theta=Math.PI/2;o.phi=Math.PI/2;}}
 function vm(p,m){Object.values(VMAP[p]).forEach(id=>document.getElementById(id).classList.remove('active'));document.getElementById(VMAP[p][m]).classList.add('active');applyVM(ORB[p],m);}
@@ -883,11 +760,11 @@ function setupOrbit(cv,p){
   const drag=DRG[p],orb=ORB[p];
   cv.addEventListener('mousedown',e=>{drag.d=true;drag.x=e.clientX;drag.y=e.clientY;});
   window.addEventListener('mouseup',()=>{drag.d=false;});
-  cv.addEventListener('mousemove',e=>{if(!drag.d)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;if(e.shiftKey){const s=orb.radius*.0015;orb.panX-=dx*s;orb.panY+=dy*s;}else{orb.theta-=dx*.008;orb.phi=Math.max(.05,Math.min(Math.PI-.05,orb.phi+dy*.008));}});
+  cv.addEventListener('mousemove',e=>{if(!drag.d)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;if(e.shiftKey){const s=orb.radius*.0015;orb.panX-=dx*s;orb.panY+=dy*s;}else{orb.theta-=dx*.008;orb.phi=Math.max(.05,Math.min(Math.PI-.05,orb.phi-dy*.008));}});
   cv.addEventListener('wheel',e=>{e.preventDefault();orb.radius=Math.max(.05,orb.radius*(1+e.deltaY*.001));},{passive:false});
   let lpd=null;
   cv.addEventListener('touchstart',e=>{if(e.touches.length===1){drag.d=true;drag.x=e.touches[0].clientX;drag.y=e.touches[0].clientY;lpd=null;}else if(e.touches.length===2){drag.d=false;lpd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}});
-  cv.addEventListener('touchmove',e=>{e.preventDefault();if(e.touches.length===1&&drag.d){const dx=e.touches[0].clientX-drag.x,dy=e.touches[0].clientY-drag.y;drag.x=e.touches[0].clientX;drag.y=e.touches[0].clientY;orb.theta-=dx*.008;orb.phi=Math.max(.05,Math.min(Math.PI-.05,orb.phi+dy*.008));}else if(e.touches.length===2&&lpd!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);orb.radius=Math.max(.05,orb.radius*(lpd/d));lpd=d;}},{passive:false});
+  cv.addEventListener('touchmove',e=>{e.preventDefault();if(e.touches.length===1&&drag.d){const dx=e.touches[0].clientX-drag.x,dy=e.touches[0].clientY-drag.y;drag.x=e.touches[0].clientX;drag.y=e.touches[0].clientY;orb.theta-=dx*.008;orb.phi=Math.max(.05,Math.min(Math.PI-.05,orb.phi-dy*.008));}else if(e.touches.length===2&&lpd!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);orb.radius=Math.max(.05,orb.radius*(lpd/d));lpd=d;}},{passive:false});
   cv.addEventListener('touchend',()=>{drag.d=false;lpd=null;});
 }
 function initR(p,antialias){
@@ -1022,7 +899,7 @@ function runHeight(customMin,customMax){
       showPrev('h',pxs,pys,pzs,pcols);
       setupHSliders(h);
       markStepDone(3,'Height colorized - '+fmtI(nPts)+' points');
-      activateStep(5);
+      activateStep(4);
       document.getElementById('expHeight').classList.remove('hidden');
     } else {
       if(PT['h']){const ca=PT['h'].geometry.attributes.color;for(let i=0;i<hPzs.length;i++){const t2=(hPzs[i]-minZ)/sZR,c2=h2rgb(t2);ca.setXYZ(i,c2.r/255,c2.g/255,c2.b/255);}ca.needsUpdate=true;}
@@ -1235,135 +1112,10 @@ async function startOrtho(){
     document.getElementById('resOrtho').classList.remove('hidden');
     showPrev('o',pxs,pys,pzs,pcols);
     markStepDone(3,'Ortho colorized - '+fmtI(nPts)+' points');
-    activateStep(5);
+    activateStep(4);
     document.getElementById('expOrtho').classList.remove('hidden');
   }
   chunk();
-}
-
-// TIN
-function tinSrc(s){tinSrcMode=s;}
-function runTIN(){
-  document.getElementById('tinRunBtn').disabled=true;
-  document.getElementById('tinProgressWrap').classList.remove('hidden');
-  bar('tinExtBar','tinExtPct','tinExtTag',0,'Starting...','active');
-  bar('tinBldBar','tinBldPct','tinBldTag',0,'Waiting','');
-  stat('tinStatus','Extracting ground points...','processing');
-  tinSrcMode='ground'; // always ground only in this flow
-  setTimeout(()=>tinExtract(),40);
-}
-function tinExtract(){
-  const h=G.hdr,{ptOff,ptFmt,ptRL,nPts,xS,yS,zS,xO,yO,zO}=h;
-  const iSz=FSZ[ptFmt]||ptRL,inDV=new DataView(G.buf);
-  const xs=[],ys=[],zs=[];const CHUNK=100000;let proc=0;
-  function chunk(){
-    const end=Math.min(proc+CHUNK,nPts);
-    for(let i=proc;i<end;i++){const io=ptOff+i*iSz;const cb=inDV.getUint8(io+FCLOFF[ptFmt]),cv=FCLFULL[ptFmt]?cb:(cb&0x1F);if(cv!==CLS_GND)continue;xs.push(inDV.getInt32(io,true)*xS+xO);ys.push(inDV.getInt32(io+4,true)*yS+yO);zs.push(inDV.getInt32(io+8,true)*zS+zO);}
-    proc=end;bar('tinExtBar','tinExtPct','tinExtTag',(proc/nPts)*100,fmtI(proc)+' scanned','active');
-    if(proc<nPts){setTimeout(chunk,0);return;}
-    bar('tinExtBar','tinExtPct','tinExtTag',100,'Done','done');
-    if(!xs.length){stat('tinStatus','No classified ground points found. Run Ground Classifier first.','error');document.getElementById('tinRunBtn').disabled=false;return;}
-    stat('tinStatus',fmtI(xs.length)+' ground points extracted. Building TIN...','processing');
-    bar('tinBldBar','tinBldPct','tinBldTag',0,'Starting...','active');
-    setTimeout(()=>tinBuildGrid(xs,ys,zs),30);
-  }
-  chunk();
-}
-function tinBuildGrid(xs,ys,zs){
-  const cs=parseFloat(document.getElementById('tinCell').value),N=xs.length;
-  let mX=Infinity,mY=Infinity,mZ=Infinity,MX=-Infinity,MY=-Infinity,MZ=-Infinity;
-  for(let i=0;i<N;i++){if(xs[i]<mX)mX=xs[i];if(xs[i]>MX)MX=xs[i];if(ys[i]<mY)mY=ys[i];if(ys[i]>MY)MY=ys[i];if(zs[i]<mZ)mZ=zs[i];if(zs[i]>MZ)MZ=zs[i];}
-  const gW=Math.max(2,Math.ceil((MX-mX)/cs)+1),gH=Math.max(2,Math.ceil((MY-mY)/cs)+1);
-  if(gW*gH>4000000){stat('tinStatus','Grid too large. Increase Cell Size.','error');document.getElementById('tinRunBtn').disabled=false;return;}
-  const grid=new Float32Array(gW*gH).fill(Infinity);const CHUNK=80000;let proc=0;
-  function chunk(){
-    const end=Math.min(proc+CHUNK,N);
-    for(let i=proc;i<end;i++){const c=Math.max(0,Math.min(gW-1,Math.floor((xs[i]-mX)/cs))),r=Math.max(0,Math.min(gH-1,Math.floor((ys[i]-mY)/cs)));if(zs[i]<grid[r*gW+c])grid[r*gW+c]=zs[i];}
-    proc=end;bar('tinBldBar','tinBldPct','tinBldTag',(proc/N)*40,'Gridding...','active');
-    if(proc<N){setTimeout(chunk,0);return;}
-    for(let p=0;p<6;p++){let ch=false;for(let r=0;r<gH;r++)for(let c=0;c<gW;c++){if(isFinite(grid[r*gW+c]))continue;let s=0,n=0;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<gH&&nc>=0&&nc<gW&&isFinite(grid[nr*gW+nc])){s+=grid[nr*gW+nc];n++;}}if(n>0){grid[r*gW+c]=s/n;ch=true;}}if(!ch)break;}
-    bar('tinBldBar','tinBldPct','tinBldTag',60,'Triangulating...','active');
-    setTimeout(()=>tinTriangulate(grid,gW,gH,cs,mX,mY,mZ,MZ),10);
-  }
-  chunk();
-}
-function tinTriangulate(grid,gW,gH,cs,mX,mY,mZ,MZ){
-  const verts=[],faces=[],idx=new Int32Array(gW*gH).fill(-1);let vi=0;
-  for(let r=0;r<gH;r++)for(let c=0;c<gW;c++){if(!isFinite(grid[r*gW+c])){idx[r*gW+c]=-1;continue;}idx[r*gW+c]=vi++;verts.push(mX+c*cs,mY+r*cs,grid[r*gW+c]);}
-  for(let r=0;r<gH-1;r++)for(let c=0;c<gW-1;c++){const i00=idx[r*gW+c],i10=idx[(r+1)*gW+c],i01=idx[r*gW+c+1],i11=idx[(r+1)*gW+c+1];if(i00>=0&&i10>=0&&i01>=0)faces.push(i00,i10,i01);if(i10>=0&&i11>=0&&i01>=0)faces.push(i10,i11,i01);}
-  bar('tinBldBar','tinBldPct','tinBldTag',100,'Done','done');
-  const NV=vi,NF=faces.length/3;let area=0;
-  for(let f=0;f<faces.length;f+=3){const a=faces[f]*3,b=faces[f+1]*3,c2=faces[f+2]*3;const ax=verts[b]-verts[a],ay=verts[b+1]-verts[a+1];const bx=verts[c2]-verts[a],by=verts[c2+1]-verts[a+1];area+=Math.abs(ax*by-ay*bx)*.5;}
-  tinV=verts;tinF=faces;
-  document.getElementById('tinVerts').textContent=fmtI(NV);document.getElementById('tinTris').textContent=fmtI(NF);document.getElementById('tinArea').textContent=fmtI(area);
-  document.getElementById('tinMinZ').textContent=fmtN(mZ)+' m';document.getElementById('tinMaxZ').textContent=fmtN(MZ)+' m';document.getElementById('tinZRange').textContent=fmtN(MZ-mZ)+' m';
-  stat('tinStatus','TIN built - '+fmtI(NV)+' vertices - '+fmtI(NF)+' triangles','success');
-  document.getElementById('resTin').classList.remove('hidden');
-  // Show the result section first so the canvas has real dimensions, then build the 3D scene
-  setTimeout(function(){
-    tinBuild3D(verts,faces,mZ,MZ);
-    document.getElementById('tinRunBtn').disabled=false;
-    markStepDone(4,'TIN generated - '+fmtI(NV)+' vertices / '+fmtI(NF)+' triangles');
-    activateStep(5);
-    document.getElementById('expTin').classList.remove('hidden');
-  },50);
-}
-function tinBuild3D(verts,faces,mZ,MZ){
-  const sZR=(MZ-mZ)<1e-9?1:(MZ-mZ),h=G.hdr;
-  const cx=(h.maxX+h.minX)/2,cy=(h.maxY+h.minY)/2,cz=(MZ+mZ)/2;
-  const span=Math.max(h.maxX-h.minX,h.maxY-h.minY,MZ-mZ,.001),sc=2/span;
-  const NV=verts.length/3;
-  const pos=new Float32Array(NV*3),col=new Float32Array(NV*3),nrm=new Float32Array(NV*3);
-  for(let i=0;i<NV;i++){pos[i*3]=(verts[i*3]-cx)*sc;pos[i*3+1]=(verts[i*3+2]-cz)*sc;pos[i*3+2]=(verts[i*3+1]-cy)*sc;const c2=h2rgb((verts[i*3+2]-mZ)/sZR);col[i*3]=c2.r/255;col[i*3+1]=c2.g/255;col[i*3+2]=c2.b/255;}
-  for(let f=0;f<faces.length;f+=3){const a=faces[f]*3,b=faces[f+1]*3,c=faces[f+2]*3;const ax=pos[b]-pos[a],ay=pos[b+1]-pos[a+1],az=pos[b+2]-pos[a+2];const bx=pos[c]-pos[a],by=pos[c+1]-pos[a+1],bz=pos[c+2]-pos[a+2];const nx=ay*bz-az*by,ny=az*bx-ax*bz,nz=ax*by-ay*bx;const l=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;for(let k=0;k<3;k++){const vi=faces[f+k]*3;nrm[vi]+=nx/l;nrm[vi+1]+=ny/l;nrm[vi+2]+=nz/l;}}
-  for(let i=0;i<NV;i++){const vi=i*3,l=Math.sqrt(nrm[vi]*nrm[vi]+nrm[vi+1]*nrm[vi+1]+nrm[vi+2]*nrm[vi+2])||1;nrm[vi]/=l;nrm[vi+1]/=l;nrm[vi+2]/=l;}
-  const wrap=document.getElementById('tinWrap'),cv=document.getElementById('cvT');
-  const W=wrap.clientWidth,H=Math.max(wrap.clientHeight||500,300);
-  if(R['t']){cancelAnimationFrame(AID['t']);R['t'].dispose();}
-  const scene=new THREE.Scene();scene.background=new THREE.Color(0x111418);
-  const cam=new THREE.PerspectiveCamera(45,W/H,.0001,100000);
-  const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));renderer.setSize(W,H);
-  const grid=new THREE.GridHelper(4,24,0x333333,0x222222);grid.position.y=-(MZ-mZ)/2*sc-.08;scene.add(grid);
-  scene.add(new THREE.AmbientLight(0xffffff,.5));const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(1,2,1);scene.add(dl);const dl2=new THREE.DirectionalLight(0xffffff,.3);dl2.position.set(-1,-1,-1);scene.add(dl2);
-  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));geo.setAttribute('normal',new THREE.BufferAttribute(nrm,3));geo.setIndex(new THREE.BufferAttribute(new Uint32Array(faces),1));
-  const mat=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
-  tinMesh3d=new THREE.Mesh(geo,mat);scene.add(tinMesh3d);
-  R['t']=renderer;SC['t']=scene;CAM['t']=cam;Object.assign(ORB['t'],{theta:-.5,phi:1,radius:2.8,panX:0,panY:0});
-  setupOrbit(cv,'t');
-  function loop(){AID['t']=requestAnimationFrame(loop);if(AR['t']&&!DRG['t'].d)ORB['t'].theta+=.002;const{theta,phi,radius,panX,panY}=ORB['t'];cam.position.set(radius*Math.sin(phi)*Math.sin(theta)+panX,radius*Math.cos(phi)+panY,radius*Math.sin(phi)*Math.cos(theta));cam.lookAt(panX,panY,0);renderer.render(scene,cam);}
-  loop();
-}
-function tinWireToggle(){tinWireMode=!tinWireMode;document.getElementById('tinWireTog').classList.toggle('on',tinWireMode);if(tinMesh3d)tinMesh3d.material.wireframe=tinWireMode;}
-function exportTIN(fmt){
-  if(!tinV||!tinF)return;
-  document.getElementById('tinExpPb').classList.remove('hidden');
-  bar('tinExpBar','tinExpPct','tinExpTag',0,'Generating...','active');
-  stat('tinExpStatus','Generating '+fmt.toUpperCase()+'...','processing');
-  setTimeout(()=>_doTinExport(fmt),30);
-}
-function _doTinExport(fmt){
-  const base=G.fn.replace(/\.las$/i,'')+'_tin';const V=tinV,F=tinF,NV=V.length/3,NF=F.length/3;
-  let content='',filename='',mime='text/plain';
-  if(fmt==='obj'){const L=['# WingtraLIDAR TIN','# Vertices: '+NV,'# Faces: '+NF,''];for(let i=0;i<NV;i++)L.push('v '+V[i*3].toFixed(4)+' '+V[i*3+1].toFixed(4)+' '+V[i*3+2].toFixed(4));L.push('');for(let i=0;i<NF;i++)L.push('f '+(F[i*3]+1)+' '+(F[i*3+1]+1)+' '+(F[i*3+2]+1));content=L.join('\n');filename=base+'.obj';}
-  else if(fmt==='stl'){const L=['solid tin'];for(let i=0;i<NF;i++){const a=F[i*3]*3,b=F[i*3+1]*3,c2=F[i*3+2]*3;const ax=V[b]-V[a],ay=V[b+1]-V[a+1],az=V[b+2]-V[a+2];const bx=V[c2]-V[a],by=V[c2+1]-V[a+1],bz=V[c2+2]-V[a+2];const nx=ay*bz-az*by,ny=az*bx-ax*bz,nz=ax*by-ay*bx;const nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;L.push('  facet normal '+(nx/nl).toFixed(6)+' '+(ny/nl).toFixed(6)+' '+(nz/nl).toFixed(6),'    outer loop','      vertex '+V[a].toFixed(4)+' '+V[a+1].toFixed(4)+' '+V[a+2].toFixed(4),'      vertex '+V[b].toFixed(4)+' '+V[b+1].toFixed(4)+' '+V[b+2].toFixed(4),'      vertex '+V[c2].toFixed(4)+' '+V[c2+1].toFixed(4)+' '+V[c2+2].toFixed(4),'    endloop','  endfacet');}L.push('endsolid tin');content=L.join('\n');filename=base+'.stl';}
-  else if(fmt==='ply'){const L=['ply','format ascii 1.0','comment WingtraLIDAR TIN','element vertex '+NV,'property float x','property float y','property float z','element face '+NF,'property list uchar int vertex_indices','end_header'];for(let i=0;i<NV;i++)L.push(V[i*3].toFixed(4)+' '+V[i*3+1].toFixed(4)+' '+V[i*3+2].toFixed(4));for(let i=0;i<NF;i++)L.push('3 '+F[i*3]+' '+F[i*3+1]+' '+F[i*3+2]);content=L.join('\n');filename=base+'.ply';}
-  else if(fmt==='dxf'){const L=['0','SECTION','2','ENTITIES'];for(let i=0;i<NF;i++){const a=F[i*3]*3,b=F[i*3+1]*3,c2=F[i*3+2]*3;L.push('0','3DFACE','8','TIN','10',V[a].toFixed(4),'20',V[a+1].toFixed(4),'30',V[a+2].toFixed(4),'11',V[b].toFixed(4),'21',V[b+1].toFixed(4),'31',V[b+2].toFixed(4),'12',V[c2].toFixed(4),'22',V[c2+1].toFixed(4),'32',V[c2+2].toFixed(4),'13',V[c2].toFixed(4),'23',V[c2+1].toFixed(4),'33',V[c2+2].toFixed(4));}L.push('0','ENDSEC','0','EOF');content=L.join('\n');filename=base+'.dxf';}
-  else if(fmt==='geojson'){const feats=[];for(let i=0;i<NF;i++){const a=F[i*3]*3,b=F[i*3+1]*3,c2=F[i*3+2]*3;feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[V[a],V[a+1],V[a+2]],[V[b],V[b+1],V[b+2]],[V[c2],V[c2+1],V[c2+2]],[V[a],V[a+1],V[a+2]]]]},properties:{}});}content=JSON.stringify({type:'FeatureCollection',features:feats});filename=base+'.geojson';mime='application/json';}
-  bar('tinExpBar','tinExpPct','tinExpTag',50,'Encoding...','active');
-  setTimeout(function(){
-    if(window.showSaveFilePicker){
-      (async function(){try{const h2=await window.showSaveFilePicker({suggestedName:filename});const w=await h2.createWritable();await w.write(new Blob([content],{type:mime}));await w.close();bar('tinExpBar','tinExpPct','tinExpTag',100,'Done','done');stat('tinExpStatus','Saved '+filename,'success');}catch(e){if(e.name==='AbortError'){bar('tinExpBar','tinExpPct','tinExpTag',0,'Cancelled','');stat('tinExpStatus','Cancelled.','info');}else{_tinFallback(content,filename,mime);}}})();return;
-    }
-    _tinFallback(content,filename,mime);
-  },30);
-}
-function _tinFallback(content,filename,mime){
-  if(content.length>150*1024*1024){stat('tinExpStatus','File too large. Use Chrome or Edge.','error');bar('tinExpBar','tinExpPct','tinExpTag',0,'Too large','');return;}
-  bar('tinExpBar','tinExpPct','tinExpTag',100,'Done','done');
-  const b64=btoa(unescape(encodeURIComponent(content)));
-  const a=document.createElement('a');a.href='data:'+mime+';base64,'+b64;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);
-  stat('tinExpStatus','Download started: '+filename,'success');
 }
 
 // LAS EXPORT
