@@ -1,4 +1,4 @@
-# WingtraLIDAR Point Cloud Tool — Beta v5.6
+# WingtraLIDAR Point Cloud Tool — Beta v5.9
 
 Browser-based LiDAR point cloud processing. All computation runs **100% locally** in the browser — no data is uploaded to any server.
 
@@ -6,13 +6,14 @@ Browser-based LiDAR point cloud processing. All computation runs **100% locally*
 
 ## Workflow
 
-| Step | All Tools | Ground Classifier only |
-|---|---|---|
-| **1** | Open Point Cloud | Open Point Cloud |
-| **2** | Select Tool | Select Tool |
-| **3** | Review Results | Review Results |
-| **4** | Export Deliverables | Create Deliverables (TIN / future) |
-| **5** | — | Export Deliverables |
+| Step | Description |
+|---|---|
+| **1** | Open Point Cloud |
+| **2** | Select Tool |
+| **3** | Review Results |
+| **4** | Export Deliverables |
+
+Ground Classifier uses all 4 steps. All other tools go 1 → 2 → 3 → 4.
 
 ---
 
@@ -22,29 +23,15 @@ Browser-based LiDAR point cloud processing. All computation runs **100% locally*
 |---|---|---|
 | 👁️ **Viewer** | 3D view with All Points / Ground Only / RGB layer switching | — |
 | 🏔️ **Height Colorizer** | Colorize by Z value with adjustable min/max range | Colorized `.las` |
-| 🗺️ **Ground Classifier** | Progressive DTM-based ground detection with TIN generation | Classified `.las` + Ground-only `.las` + TIN mesh |
+| 🗺️ **Ground Classifier** | Progressive DTM-based ground detection | Classified `.las` + Ground-only `.las` |
 | 📷 **Ortho Colorizer** | Project RGB from a GeoTIFF orthomosaic onto each point | Colorized RGB `.las` |
-
----
-
-## TIN Export Formats
-
-Available after Ground Classifier → Create Deliverables → TIN Model:
-
-| Format | Use case |
-|---|---|
-| `.OBJ` | Blender, Rhino, universal 3D / CAD |
-| `.STL` | 3D printing, CAD simulation |
-| `.PLY` | CloudCompare, point cloud / mesh tools |
-| `.DXF` | AutoCAD, Civil3D, survey software |
-| `.GeoJSON` | QGIS, Mapbox, web GIS |
 
 ---
 
 ## Tech Stack
 
 - **Vanilla HTML/CSS/JS** — no build step, single file app
-- **Three.js r128** — 3D point cloud and TIN preview
+- **Three.js r128** — 3D point cloud preview
 - **GeoTIFF.js 2.1.3** — raster decoding for ortho colorization
 - **File System Access API** — large file exports in Chrome/Edge (no size cap)
 - **Base64 fallback** — export in other browsers (up to 150 MB)
@@ -63,7 +50,7 @@ Open `index.html` directly in Chrome or Edge — no server needed.
 
 ```bash
 git add .
-git commit -m "WingtraLIDAR Point Cloud Tool v5.6"
+git commit -m "WingtraLIDAR Point Cloud Tool v5.9"
 git push
 ```
 
