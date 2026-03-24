@@ -258,7 +258,7 @@ footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);font-
     </svg>
   </div>
   <h1>Wingtra<span class="accent">LIDAR</span> Point Cloud Tool<span class="beta">Beta</span></h1>
-  <div class="version-badge">v5.9</div>
+  <div class="version-badge">v6.0</div>
 </header>
 
 <!-- ==============================
@@ -767,6 +767,7 @@ function setupOrbit(cv,p){
   cv.addEventListener('touchmove',e=>{e.preventDefault();if(e.touches.length===1&&drag.d){const dx=e.touches[0].clientX-drag.x,dy=e.touches[0].clientY-drag.y;drag.x=e.touches[0].clientX;drag.y=e.touches[0].clientY;orb.theta-=dx*.008;orb.phi=Math.max(.05,Math.min(Math.PI-.05,orb.phi-dy*.008));}else if(e.touches.length===2&&lpd!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);orb.radius=Math.max(.05,orb.radius*(lpd/d));lpd=d;}},{passive:false});
   cv.addEventListener('touchend',()=>{drag.d=false;lpd=null;});
 }
+
 function initR(p,antialias){
   const wrap=document.getElementById(WPS[p]),cv=document.getElementById(CVS[p]);
   const W=wrap.clientWidth,H=Math.max(wrap.clientHeight||500,300);
