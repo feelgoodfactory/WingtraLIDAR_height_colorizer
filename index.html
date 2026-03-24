@@ -258,7 +258,7 @@ footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);font-
     </svg>
   </div>
   <h1>Wingtra<span class="accent">LIDAR</span> Point Cloud Tool<span class="beta">Beta</span></h1>
-  <div class="version-badge">v6.0</div>
+  <div class="version-badge">v6.1</div>
 </header>
 
 <!-- ==============================
@@ -601,6 +601,7 @@ function h2rgb(t){t=Math.max(0,Math.min(1,t));for(let i=1;i<STOPS.length;i++){co
 
 // State
 let G={buf:null,hdr:null,fn:'',fsz:0};
+let AMODE=null; // active tool mode — guards async results from stale runs
 let hOut=null,gOut=null,gGndOnly=null,oOut=null,oTifBuf=null;
 let hPxs=[],hPys=[],hPzs=[],hUMin=null,hUMax=null,hRetimer=null;
 let gPrevAll=null,gPrevGnd=null,gGndCnt=0;
@@ -701,6 +702,7 @@ function resetAll(){
   G={buf:null,hdr:null,fn:'',fsz:0};hOut=null;gOut=null;gGndOnly=null;oOut=null;oTifBuf=null;
   hPxs=[];hPys=[];hPzs=[];hUMin=null;hUMax=null;clearTimeout(hRetimer);
   gPrevAll=null;gPrevGnd=null;gGndCnt=0;
+  AMODE=null;
   vData={all:null,ground:null,rgb:null};
   // Reset all steps (5 possible)
   [1,2,3,4,5].forEach(n=>setStep(n,n===1?'active':'pending'));
@@ -747,8 +749,10 @@ function pickMode(mode){
   else if(mode==='ortho'){document.getElementById('toolConfig').classList.remove('hidden');document.getElementById('cfgOrtho').classList.remove('hidden');resetTifDZ();setupTifDZ();}
   else{document.getElementById('toolConfig').classList.add('hidden');}
   // Auto-start modes
-  if(mode==='viewer'){markStepDone(2,'Viewer selected');activateStep(3);startViewer();}
-  else if(mode==='height'){markStepDone(2,'Height Colorizer selected');activateStep(3);startHeight();}
+  if(mode==='viewer'){AMODE='viewer';markStepDone(2,'Viewer selected');activateStep(3);startViewer();}
+  else if(mode==='height'){AMODE='height';markStepDone(2,'Height Colorizer selected');activateStep(3);startHeight();}
+  else if(mode==='ground'){AMODE='ground';}
+  else if(mode==='ortho'){AMODE='ortho';}
 }
 
 // THREE.JS
@@ -840,6 +844,7 @@ function startViewer(){
     proc=end;bar('p1bar','p1pct','p1tag',(proc/nPts)*100,fmtI(proc)+' pts','active');
     if(proc<nPts){setTimeout(chunk,0);return;}
     bar('p1bar','p1pct','p1tag',100,'Done','done');
+    if(AMODE!=='viewer')return; // user switched away; discard stale results
     vData.all={xs:aXs,ys:aYs,zs:aZs,cols:aCols};
     if(hasGnd)vData.ground={xs:gXs,ys:gYs,zs:gZs,cols:gXs.map(()=>NEU)};
     if(hasRgb)vData.rgb={xs:rXs,ys:rYs,zs:rZs,cols:rCols};
@@ -894,6 +899,7 @@ function runHeight(customMin,customMax){
     if(proc<nPts){setTimeout(chunk,0);return;}
     hOut=outBuf;bar('p1bar','p1pct','p1tag',100,'Done','done');
     if(isInit){
+      if(AMODE!=='height')return; // user switched away; discard stale results
       document.getElementById('hLMin').textContent=fmtN(minZ)+' m';document.getElementById('hLMax').textContent=fmtN(maxZ)+' m';
       stat('s3status','Done - '+fmtI(nPts)+' points - format '+outFmt,'success');
       document.getElementById('resHeight').classList.remove('hidden');
@@ -1023,6 +1029,7 @@ function gFinalize(cls,inDV,iSz,nPts,ptOff,h){
   document.getElementById('gStMinZ').textContent=fmtN(h.minZ)+' m';document.getElementById('gStMaxZ').textContent=fmtN(h.maxZ)+' m';document.getElementById('gStZRange').textContent=fmtN(h.maxZ-h.minZ)+' m';
   document.getElementById('gLMin').textContent=fmtN(h.minZ)+' m';document.getElementById('gLMax').textContent=fmtN(h.maxZ)+' m';
   stat('s3status','Done - '+fmtI(gndCnt)+' ground / '+fmtI(nPts)+' total ('+pct+'%)','success');
+  if(AMODE!=='ground')return;
   document.getElementById('resGround').classList.remove('hidden');
   showPrev('g',aXs,aYs,aZs,aCols);
   gLayer('all');
@@ -1110,6 +1117,7 @@ async function startOrtho(){
     if(proc<nPts){setTimeout(chunk,0);return;}
     oOut=outBuf;bar('p3bar','p3pct','p3tag',100,'Done','done');
     stat('s3status','Done - '+fmtI(nPts)+' pts - '+tW+'x'+tH+' ortho','success');
+    if(AMODE!=='ortho')return;
     document.getElementById('resOrtho').classList.remove('hidden');
     showPrev('o',pxs,pys,pzs,pcols);
     markStepDone(3,'Ortho colorized - '+fmtI(nPts)+' points');
