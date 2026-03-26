@@ -1,4 +1,4 @@
-# WingtraLIDAR Point Cloud Tool — Beta v6.1
+# WingtraLIDAR Point Cloud Tool — Beta v6.8
 
 Browser-based LiDAR point cloud processing. All computation runs **100% locally** in the browser — no data is uploaded to any server.
 
@@ -50,7 +50,7 @@ Open `index.html` directly in Chrome or Edge — no server needed.
 
 ```bash
 git add .
-git commit -m "WingtraLIDAR Point Cloud Tool v6.1"
+git commit -m "WingtraLIDAR Point Cloud Tool v6.8"
 git push
 ```
 
